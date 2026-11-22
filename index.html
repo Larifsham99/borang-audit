@@ -211,7 +211,7 @@ const newItem = () => ({nama:"", amaun:"", auto:false, showSubAmt:false, sub:[]}
 function defaults(){
   return {
     id: uid(), nama:"Pengeluaran baru", tahun:String(new Date().getFullYear()), ke:"", tarikh:"",
-    amaun:[""], bakiLepas:"", showBakiLepas:false, belanja:"",
+    amaun:[""], bakiLepas:"", showBakiLepas:false, belanja:"", showBelanja:true, showBaki:true,
     sign:"", showSign:true, extraL:"",
     tajuk:"", items:[newItem()], nota:"",
     label:{pengeluaran:"PENGELUARAN KE-", belanja:"PEMBELANJAAN", baki:"BAKI DIBAWA KEHADAPAN", jumlah:"JUMLAH", bakiLepas:"BAKI SEBELUM"},
@@ -305,8 +305,8 @@ function pageLand(r){
       ${r.tarikh ? `<div style="${ts("tarikh")}">${esc(r.tarikh)}</div>` : ""}
       <div style="${ts("amt")}">= ${amts}</div>
       ${r.showBakiLepas ? `<div style="${ts("bakiLepas")}">${esc(L.bakiLepas)} = ${money(t.lepas, r.dec)}</div>` : ""}
-      <div style="${ts("belanja")}">${esc(L.belanja)} = ${money(t.belanja, r.dec)}</div>
-      <div style="${ts("baki")}">${esc(L.baki)} = ${money(t.baki, r.dec)}</div>
+      ${r.showBelanja ? `<div style="${ts("belanja")}">${esc(L.belanja)} = ${money(t.belanja, r.dec)}</div>` : ""}
+      ${r.showBaki ? `<div style="${ts("baki")}">${esc(L.baki)} = ${money(t.baki, r.dec)}</div>` : ""}
       ${extra}
     </div>
     ${r.showSign ? `<div class="lsign" style="${ts("sign")};text-align:${S.alignSign}"><div class="dots">..............................</div>${r.sign.trim()?`(${esc(r.sign)})`:""}</div>` : ""}
@@ -394,6 +394,8 @@ function tabIsi(){
     ${fChk("showBakiLepas","Papar baris baki sebelum dalam dokumen")}
     <label><span>Pembelanjaan (kosong = ikut jumlah halaman 2)</span>${fExpr("belanja","auto")}</label>${evOut("belanja")}
     <div class="calc" data-sum></div><p class="warn" data-warn hidden></p>
+    ${fChk("showBelanja","Papar baris pembelanjaan dalam dokumen")}
+    ${fChk("showBaki","Papar baris baki dibawa kehadapan dalam dokumen")}
     ${fText("sign","Nama penandatangan")}
     ${fChk("showSign","Papar ruang tandatangan")}
     ${fArea("extraL","Baris tambahan (satu baris satu, pilihan)",2,"cth. DISEMAK OLEH: ...")}
