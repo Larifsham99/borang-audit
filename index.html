@@ -89,6 +89,8 @@ input[type=range]{width:100%}
 .tg:has(input:checked){background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
 .tg:has(input:focus-visible){outline:2px solid var(--accent)}
 .mgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.ovf{color:var(--danger);text-transform:none;letter-spacing:0;font-weight:600;margin-left:8px}
+.ovf .btn{margin-left:6px;color:var(--fg)}
 .toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--fg);color:var(--bg);
   padding:8px 14px;border-radius:6px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20}
 .toast.on{opacity:1}
@@ -113,6 +115,11 @@ input[type=range]{width:100%}
 .sub > div{display:grid;grid-template-columns:var(--sw,1.5em) 1fr}
 .sub .n{font-weight:700}
 .pnote{white-space:pre-line}
+.iamt{display:inline-flex;gap:.45em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.iamt > span:last-child{text-align:right;display:inline-block}
+.irow{margin-top:.05em}
+.iright{display:grid;grid-template-columns:auto 1fr auto;align-items:baseline;gap:.4em}
+.iright .lead{border-bottom:.09em dotted currentColor;min-width:1em;transform:translateY(-.25em)}
 
 #printRoot{position:fixed;left:-10000px;top:0}
 @page land{size:A4 landscape;margin:0}
@@ -160,9 +167,9 @@ input[type=range]{width:100%}
   </aside>
 
   <section class="preview" id="preview" aria-label="Pratonton">
-    <div class="cap">Halaman 1 · A4 landskap</div>
+    <div class="cap">Halaman 1 · A4 landskap <span class="ovf" id="ovfL" hidden>Kandungan melebihi halaman <button type="button" class="btn sm" data-fit="L">Muatkan automatik</button></span></div>
     <div class="sheet-wrap" id="wrapL"></div>
-    <div class="cap">Halaman 2 · A4 potret</div>
+    <div class="cap">Halaman 2 · A4 potret <span class="ovf" id="ovfP" hidden>Kandungan melebihi halaman <button type="button" class="btn sm" data-fit="P">Muatkan automatik</button></span></div>
     <div class="sheet-wrap" id="wrapP"></div>
   </section>
 </div>
@@ -198,7 +205,7 @@ function defStyle(){
     mL:{t:16,r:20,b:14,l:20}, mP:{t:22,r:18,b:18,l:22},
     gapL:5, gapP:2.5, gapTitle:4, gapJumlah:9,
     alignL:"center", vL:"top", alignSign:"center", signPos:"bottom", alignTajuk:"left", upper:true,
-    numStyle:"num", subStyle:"alpha",
+    numStyle:"num", subStyle:"alpha", amtLayout:"below", amtDec2:true, amtLeader:true,
     el:{
       year:{s:44,b:1,i:0,u:0}, ke:{s:34,b:1,i:0,u:0}, tarikh:{s:34,b:1,i:0,u:0}, amt:{s:40,b:1,i:0,u:0},
       bakiLepas:{s:25,b:0,i:0,u:0}, belanja:{s:25,b:0,i:0,u:0}, baki:{s:25,b:0,i:0,u:0}, tunai:{s:25,b:1,i:0,u:0}, tunaiNote:{s:13,b:0,i:1,u:0}, extra:{s:18,b:0,i:0,u:0}, sign:{s:15,b:0,i:0,u:0},
@@ -339,10 +346,16 @@ function signHtml(r, k, bottom){
 function pagePort(r){
   const S = r.st, E = S.el, k = S.kP/100, t = totals(r), m = S.mP;
   const ts = key => tstyle(E[key], k);
+  const lay = S.amtLayout || "below", d2 = r.dec || (lay !== "inline" && S.amtDec2);
+  const numW = Math.max(4, ...r.items.map(it => fmt(Math.abs(itemAmt(it)), d2).length + (itemAmt(it) < 0 ? 2 : 0))) + 0.6;
+  const amtBox = v => `<span class="iamt" style="${ts("itemAmt")}"><span>RM</span><span style="width:${numW}ch">${v<0?"- ":""}${fmt(Math.abs(v), d2)}</span></span>`;
   const items = r.items.map((it,i)=>{
     const subs = it.sub.filter(s=>s.t.trim() || String(s.a).trim());
-    const amt = `<span style="${ts("itemAmt")}">${money(itemAmt(it), r.dec)}</span>`;
-    const head = subs.length ? `${esc(it.nama)} = ${amt} :` : `${esc(it.nama)} ${amt}`;
+    const v = itemAmt(it);
+    let head;
+    if (lay === "below") head = `<div>${esc(it.nama)}</div><div class="irow">${amtBox(v)}</div>`;
+    else if (lay === "right") head = `<div class="iright"><span>${esc(it.nama)}</span>${S.amtLeader?`<span class="lead"></span>`:`<span></span>`}${amtBox(v)}</div>`;
+    else { const amt = `<span style="${ts("itemAmt")}">${money(v, r.dec)}</span>`; head = subs.length ? `${esc(it.nama)} = ${amt} :` : `${esc(it.nama)} ${amt}`; }
     const sl = subs.length ? `<div class="sub" style="${ts("sub")};--sw:${S.subStyle==="none"?"0":S.subStyle==="roman"?"2em":"1.5em"}">${subs.map((s,j)=>
       `<div><span class="n">${subMark(S.subStyle,j)}</span><span>${esc(s.t)}${it.showSubAmt && String(s.a).trim() ? ` = <span style="${ts("subAmt")}">${money(n(s.a), r.dec)}</span>` : ""}</span></div>`).join("")}</div>` : "";
     const num = S.numStyle==="num" ? `${i+1}.` : S.numStyle==="paren" ? `${i+1})` : "";
@@ -372,9 +385,22 @@ function render(){
   $("wrapL").innerHTML = pageLand(r); $("wrapP").innerHTML = pagePort(r);
   $("printRoot").innerHTML = pageLand(r) + pagePort(r);
   $("wrapL").classList.toggle("guides", !!db.guides); $("wrapP").classList.toggle("guides", !!db.guides);
-  fitPreview(); refresh();
+  fitPreview(); refresh(); checkOverflow();
   const opt = $("recSel").querySelector(`option[value="${r.id}"]`); if (opt) opt.textContent = r.nama || "(tanpa nama)";
 }
+
+function overflows(){
+  const [l,p] = [...$("printRoot").querySelectorAll(".land-in,.port-in")];
+  const o = el => el && el.scrollHeight > el.clientHeight + 1;
+  return {L:o(l), P:o(p)};
+}
+function checkOverflow(){ const o = overflows(); $("ovfL").hidden = !o.L; $("ovfP").hidden = !o.P; }
+$("preview").addEventListener("click", e=>{
+  const b = e.target.closest("[data-fit]"); if (!b) return;
+  const side = b.dataset.fit, r = cur(), key = "k"+side;
+  while (overflows()[side] && r.st[key] > 50){ r.st[key] -= 2; $("printRoot").innerHTML = pageLand(r) + pagePort(r); }
+  save(); drawForm(); toast(overflows()[side] ? "Masih melebihi: kurangkan margin atau jarak" : `Skala tulisan dikecilkan ke ${r.st[key]}%`);
+});
 
 /* ================= Komponen borang ================= */
 const idOf = p => "k_" + p.replace(/\./g,"_");
@@ -506,6 +532,8 @@ function tabGaya(){
     ${fRange("st.gapJumlah","Jarak sebelum jumlah",0,40,1," mm")}
     <div class="row">${fSel("st.alignTajuk","Jajaran tajuk",[["left","Kiri"],["center","Tengah"],["justify","Rata"]])}${fSel("st.numStyle","Nombor perkara",[["num","1."],["paren","1)"],["none","Tiada"]])}${fSel("st.subStyle","Tanda pecahan",[["alpha","a."],["roman","i."],["dash","–"],["dot","•"],["none","Tiada"]])}</div>
     ${fChk("st.upper","Tajuk huruf besar semua")}
+    ${fSel("st.amtLayout","Susunan amaun perkara",[["below","Di bawah nama perkara (lajur sejajar)"],["right","Di sebelah kanan (lajur sejajar)"],["inline","Sebaris dengan nama (asal)"]])}
+    <div class="row">${fChk("st.amtDec2","Seragamkan 2 tempat perpuluhan (.00)")}${fChk("st.amtLeader","Garis titik ke amaun (susunan kanan)")}</div>
     <div class="row">${fSel("st.alignSign","Jajaran tandatangan",[["center","Tengah"],["left","Kiri"],["right","Kanan"]])}${fSel("st.signPos","Kedudukan tandatangan (potret)",[["bottom","Bawah halaman"],["after","Selepas jumlah"]])}</div>
     <table class="ty"><thead><tr><th>Elemen</th><th>Saiz (pt)</th><th colspan="3">Gaya</th></tr></thead><tbody>${tyRows(EL_P)}</tbody></table>
   </fieldset>
