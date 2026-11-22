@@ -207,7 +207,7 @@ function defStyle(){
     mL:{t:16,r:20,b:14,l:20}, mP:{t:22,r:18,b:18,l:22},
     gapL:5, gapP:2.5, gapTitle:4, gapJumlah:9,
     alignL:"center", vL:"top", alignSign:"center", signPos:"bottom", alignTajuk:"left", upper:true,
-    numStyle:"num", subStyle:"alpha", amtLayout:"below", amtDec2:true, amtLeader:true, autoFit:true,
+    numStyle:"num", subStyle:"alpha", amtLayout:"below", amtDec2:true, amtLeader:true, autoFit:true, signMulti:"row", mudirPos:"right",
     el:{
       year:{s:44,b:1,i:0,u:0}, ke:{s:34,b:1,i:0,u:0}, tarikh:{s:34,b:1,i:0,u:0}, amt:{s:40,b:1,i:0,u:0},
       bakiLepas:{s:25,b:0,i:0,u:0}, belanja:{s:25,b:0,i:0,u:0}, baki:{s:25,b:0,i:0,u:0}, tunai:{s:25,b:1,i:0,u:0}, tunaiNote:{s:13,b:0,i:1,u:0}, extra:{s:18,b:0,i:0,u:0}, sign:{s:15,b:0,i:0,u:0},
@@ -223,6 +223,7 @@ function defaults(){
     amaun:[""], bakiLepas:"", showBakiLepas:false, belanja:"", showBelanja:true, showBaki:true,
     tunaiMode:"auto", tunaiManual:"", tunaiNote:"* Lebihan pembelanjaan dibayar secara tunai.", showTunaiP1:true, showTunaiP2:true,
     sign:"Ustaz Md Mukhtar Bin Tuan Guru Haji Omar Zuhdi", signJawatan:"Mudir", signLayout:"inline", signBracket:false, signDots:true, signTop:"", signExtra:"", signDateOn:true, signDateLabel:"Tarikh disahkan", signDate:"", signDatePos:"below",
+    saksiOn:false, saksi:[],
     showSign:true, signOn:"p2", extraL:"",
     tajuk:"", items:[newItem()], nota:"",
     label:{pengeluaran:"PENGELUARAN KE-", belanja:"PEMBELANJAAN", baki:"BAKI DIBAWA KEHADAPAN", jumlah:"JUMLAH", bakiLepas:"BAKI SEBELUM", tunai:"TUNAI"},
@@ -263,6 +264,7 @@ function normalize(r){
   });
   if (!r || !r.signOn) m.signOn = "p2";
   if (/^\s*$|^USTAZ MD MUKHTAR BIN HAJI OMAR ZUHDI$/.test(m.sign) && !(r && "signJawatan" in r)){ m.sign = "Ustaz Md Mukhtar Bin Tuan Guru Haji Omar Zuhdi"; m.signJawatan = "Mudir"; }
+  m.saksi = (Array.isArray(m.saksi) ? m.saksi : []).map(x => Object.assign(({on:true, top:"Saksi,", jawatan:"", nama:"", extra:"", dateOn:true, dateLabel:"Tarikh", tarikh:""}), x));
   if (!Array.isArray(m.kalk) || !m.kalk.length) m.kalk = [{k:"",a:""}];
   return m;
 }
@@ -330,20 +332,34 @@ function pageLand(r, kk){
     ${(r.signOn==="p1"||r.signOn==="both") ? signHtml(r, k, true) : ""}
   </div></div>`;
 }
-function signHtml(r, k, bottom){
-  const S = r.st;
-  const nm = String(r.sign||"").trim(), jw = String(r.signJawatan||"").trim();
+function signBlock(r, b){
+  const nm = String(b.nama||"").trim(), jw = String(b.jawatan||"").trim();
   const name = nm ? (r.signBracket ? `(${esc(nm)})` : esc(nm)) : "";
   const ln = t => t ? `<div>${t}</div>` : "";
   let body = "";
-  if (r.signLayout === "inline") body = ln(jw && name ? `${esc(jw)} : ${name}` : (esc(jw) || name));
-  else if (r.signLayout === "above") body = ln(esc(jw)) + ln(name);
+  const lay = (b.multi && r.signLayout === "inline") ? "above" : r.signLayout;
+  if (lay === "inline") body = ln(jw && name ? `${esc(jw)} : ${name}` : (esc(jw) || name));
+  else if (lay === "above") body = ln(esc(jw)) + ln(name);
   else body = ln(name) + ln(esc(jw));
-  const extra = String(r.signExtra||"").split("\n").filter(l=>l.trim()).map(l=>ln(esc(l))).join("");
-  const top = String(r.signTop||"").trim() ? `<div style="margin-bottom:.6em">${esc(r.signTop)}</div>` : "";
-  const dl = String(r.signDateLabel||"").trim(), dv = String(r.signDate||"").trim() || "....................";
-  const date = r.signDateOn ? `<div style="${r.signDatePos==="above"?"margin-bottom:.6em":"margin-top:.3em"}">${dl?esc(dl)+" : ":""}${esc(dv)}</div>` : "";
-  return `<div class="lsign" style="${tstyle(S.el.sign, k)};text-align:${S.alignSign};${bottom?"":"margin-top:12mm"}">${top}${r.signDatePos==="above"?date:""}${r.signDots?`<div class="dots">..............................</div>`:""}${body}${extra}${r.signDatePos!=="above"?date:""}</div>`;
+  const extra = String(b.extra||"").split("\n").filter(l=>l.trim()).map(l=>ln(esc(l))).join("");
+  const topTxt = String(b.top||"").trim();
+  const top = (topTxt || b.padTop) ? `<div style="margin-bottom:.6em">${topTxt ? esc(topTxt) : "&nbsp;"}</div>` : "";
+  const dl = String(b.dateLabel||"").trim(), dv = String(b.date||"").trim() || (b.multi ? "..............." : "....................");
+  const date = b.dateOn ? `<div style="${r.signDatePos==="above"?"margin-bottom:.6em":(b.multi?"margin-top:auto;padding-top:.3em":"margin-top:.3em")}">${dl?esc(dl)+" : ":""}${esc(dv)}</div>` : "";
+  return `<div style="${b.multi?"display:flex;flex-direction:column;height:100%":""}">${top}${r.signDatePos==="above"?date:""}${r.signDots?`<div class="dots">${b.multi?"........................":".............................."}</div>`:""}${body}${extra}${r.signDatePos!=="above"?date:""}</div>`;
+}
+function signHtml(r, k, bottom){
+  const S = r.st;
+  const mudir = {top:r.signTop, jawatan:r.signJawatan, nama:r.sign, extra:r.signExtra, dateOn:r.signDateOn, dateLabel:r.signDateLabel, date:r.signDate};
+  const saksi = r.saksiOn ? r.saksi.filter(x=>x.on !== false).map(x=>({top:x.top, jawatan:x.jawatan, nama:x.nama, extra:x.extra, dateOn:x.dateOn, dateLabel:x.dateLabel, date:x.tarikh})) : [];
+  const list = S.mudirPos === "left" ? [mudir, ...saksi] : [...saksi, mudir];
+  const base = `${tstyle(S.el.sign, k)};${bottom?"":"margin-top:12mm"}`;
+  if (list.length === 1) return `<div class="lsign" style="${base};text-align:${S.alignSign}">${signBlock(r, mudir)}</div>`;
+  const anyTop = list.some(b=>String(b.top||"").trim());
+  if (S.signMulti === "stack")
+    return `<div class="lsign" style="${base};text-align:${S.alignSign};display:flex;flex-direction:column;gap:7mm">${list.map(b=>signBlock(r, b)).join("")}</div>`;
+  const cols = Math.min(list.length, 3);
+  return `<div class="lsign" style="${base};display:grid;grid-template-columns:repeat(${cols},1fr);column-gap:8mm;row-gap:8mm;text-align:center;align-items:stretch">${list.map(b=>signBlock(r, {...b, padTop:anyTop, multi:true})).join("")}</div>`;
 }
 function pagePort(r, kk){
   const S = r.st, E = S.el, k = (kk ?? S.kP)/100, t = totals(r), m = S.mP;
@@ -483,6 +499,21 @@ function tabIsi(){
       <div class="row">${fText("signDateLabel","Label tarikh","Tarikh disahkan")}<label><span>Tarikh (kosong = titik untuk tulis tangan)</span><div style="display:flex;gap:6px"><input type="text" id="k_signDate" data-k="signDate" value="${esc(cur().signDate)}" placeholder="cth. 22/10/2025"><button type="button" class="btn sm" data-act="today">Hari ini</button></div></label></div>
       ${fSel("signDatePos","Kedudukan tarikh",[["below","Di bawah nama"],["above","Di atas garis tandatangan"]])}
       <div class="row">${fChk("signBracket","Nama dalam kurungan ( )")}${fChk("signDots","Garis titik tandatangan")}</div>
+      <hr style="border:0;border-top:1px solid var(--line);margin:4px 0;width:100%">
+      ${fChk("saksiOn","Tambah penandatangan saksi",true)}
+      ${cur().saksiOn ? `
+        ${cur().saksi.map((x,i)=>{ const P="saksi."+i; return `<div class="item">
+          <div class="head"><strong>Saksi ${i+1}</strong>${moveBtns("saksi",i,cur().saksi.length)}</div>
+          ${fChk(P+".on","Papar saksi ini")}
+          ${fText(P+".top","Teks di atas","cth. Saksi, / Disediakan oleh,")}
+          <div class="row">${fText(P+".jawatan","Jawatan","cth. Bendahari")}<div style="flex:2.5">${fText(P+".nama","Nama saksi")}</div></div>
+          ${fArea(P+".extra","Baris di bawah nama (pilihan)",1)}
+          ${fChk(P+".dateOn","Papar tarikh")}
+          <div class="row">${fText(P+".dateLabel","Label tarikh","Tarikh")}${fText(P+".tarikh","Tarikh (kosong = titik)","cth. 22/10/2025")}</div>
+        </div>`; }).join("")}
+        <div>${bt("add","saksi","saksi","+ Tambah saksi")}</div>
+        <div class="row">${fSel("st.signMulti","Susunan tandatangan",[["row","Sebaris (sebelah-menyebelah)"],["stack","Bertindan (atas-bawah)"]])}${fSel("st.mudirPos","Kedudukan Mudir",[["right","Paling kanan / akhir"],["left","Paling kiri / awal"]])}</div>
+        <p class="hint">Sistem menyusun sendiri: 2 penandatangan = 2 lajur, 3 = 3 lajur, lebih dari 3 akan turun ke baris baru.</p>` : ""}
     ${fSel("signOn","Letak tandatangan di",[["p2","Halaman 2 (potret)"],["p1","Halaman 1 (landskap)"],["both","Kedua-dua halaman"],["none","Tiada"]])}
     </div>
     ${fArea("extraL","Baris tambahan (satu baris satu, pilihan)",2,"cth. DISEMAK OLEH: ...")}
@@ -634,13 +665,13 @@ $("form").addEventListener("change", e=>{
     const r = cur(); r.bakiLepas = String(totals(o).baki); r.showBakiLepas = true; save(); drawForm(); toast("Baki diambil dari " + (o.nama||"rekod"));
   }
 });
-const TPL = {amt:()=>"", item:newItem, sub:()=>({t:"",a:""}), kalk:()=>({k:"",a:""})};
+const TPL = {saksi:()=>({on:true, top:"Saksi,", jawatan:"", nama:"", extra:"", dateOn:true, dateLabel:"Tarikh", tarikh:""}), amt:()=>"", item:newItem, sub:()=>({t:"",a:""}), kalk:()=>({k:"",a:""})};
 $("form").addEventListener("click", e=>{
   const b = e.target.closest("button[data-act]"); if (!b) return;
   const r = cur(), act = b.dataset.act, p = b.dataset.p, i = +b.dataset.i;
   const arr = p ? getP(r,p) : null;
   if (act === "add"){ arr.push(TPL[b.dataset.i]()); save(); drawForm(p+"."+(arr.length-1)); return; }
-  if (act === "del"){ arr.splice(i,1); if (!arr.length && p!=="items" && !p.endsWith(".sub")) arr.push(TPL[p==="kalk"?"kalk":"amt"]()); }
+  if (act === "del"){ arr.splice(i,1); if (!arr.length && (p==="amaun" || p==="kalk")) arr.push(TPL[p==="kalk"?"kalk":"amt"]()); }
   else if (act === "up" || act === "down"){ const j = act==="up"?i-1:i+1; [arr[i],arr[j]] = [arr[j],arr[i]]; }
   else if (act === "kalkSend" || act === "kalkSub"){
     const to = $("kalkTo").value, tot = r2(r.kalk.reduce((a,x)=>a+n(x.a),0)), rows = r.kalk.filter(x=>x.k.trim()||String(x.a).trim());
@@ -673,7 +704,7 @@ document.querySelector(".tabs").addEventListener("click", e=>{ const b = e.targe
 
 /* ================= Rekod ================= */
 $("recSel").addEventListener("change", e=>{ db.cur = e.target.value; save(); drawForm(); });
-$("bNew").onclick = ()=>{ const c = cur(), x = defaults(); x.st = clone(c.st); x.label = clone(c.label); x.dec = c.dec; ["sign","signJawatan","signLayout","signBracket","signDots","signTop","signExtra","signOn","signDateOn","signDateLabel","signDatePos"].forEach(f=>x[f]=c[f]);
+$("bNew").onclick = ()=>{ const c = cur(), x = defaults(); x.st = clone(c.st); x.label = clone(c.label); x.dec = c.dec; ["sign","signJawatan","signLayout","signBracket","signDots","signTop","signExtra","signOn","signDateOn","signDateLabel","signDatePos","saksiOn"].forEach(f=>x[f]=c[f]); x.saksi = c.saksi.map(z=>({...z, tarikh:""}));
   x.bakiLepas = String(totals(c).baki); x.showBakiLepas = c.showBakiLepas;
   db.recs.unshift(x); db.cur = x.id; db.tab = "isi"; save(); drawForm(); $(idOf("nama")).select(); toast("Rekod baru dibuat. Baki sebelum diambil dari rekod tadi."); };
 $("bDup").onclick = ()=>{ const x = clone(cur()); x.id = uid(); x.nama = (x.nama||"") + " (salinan)"; db.recs.unshift(x); db.cur = x.id; save(); drawForm(); toast("Rekod disalin"); };
