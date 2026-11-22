@@ -213,7 +213,7 @@ function defaults(){
     id: uid(), nama:"Pengeluaran baru", tahun:String(new Date().getFullYear()), ke:"", tarikh:"",
     amaun:[""], bakiLepas:"", showBakiLepas:false, belanja:"", showBelanja:true, showBaki:true,
     tunaiMode:"auto", tunaiManual:"", tunaiNote:"* Lebihan pembelanjaan dibayar secara tunai.", showTunaiP1:true, showTunaiP2:true,
-    sign:"Ustaz Md Mukhtar Bin Tuan Guru Haji Omar Zuhdi", signJawatan:"Mudir", signLayout:"inline", signBracket:false, signDots:true, signTop:"", signExtra:"",
+    sign:"Ustaz Md Mukhtar Bin Tuan Guru Haji Omar Zuhdi", signJawatan:"Mudir", signLayout:"inline", signBracket:false, signDots:true, signTop:"", signExtra:"", signDateOn:true, signDateLabel:"Tarikh disahkan", signDate:"", signDatePos:"below",
     showSign:true, signOn:"p2", extraL:"",
     tajuk:"", items:[newItem()], nota:"",
     label:{pengeluaran:"PENGELUARAN KE-", belanja:"PEMBELANJAAN", baki:"BAKI DIBAWA KEHADAPAN", jumlah:"JUMLAH", bakiLepas:"BAKI SEBELUM", tunai:"TUNAI"},
@@ -332,7 +332,9 @@ function signHtml(r, k, bottom){
   else body = ln(name) + ln(esc(jw));
   const extra = String(r.signExtra||"").split("\n").filter(l=>l.trim()).map(l=>ln(esc(l))).join("");
   const top = String(r.signTop||"").trim() ? `<div style="margin-bottom:.6em">${esc(r.signTop)}</div>` : "";
-  return `<div class="lsign" style="${tstyle(S.el.sign, k)};text-align:${S.alignSign};${bottom?"":"margin-top:12mm"}">${top}${r.signDots?`<div class="dots">..............................</div>`:""}${body}${extra}</div>`;
+  const dl = String(r.signDateLabel||"").trim(), dv = String(r.signDate||"").trim() || "....................";
+  const date = r.signDateOn ? `<div style="${r.signDatePos==="above"?"margin-bottom:.6em":"margin-top:.3em"}">${dl?esc(dl)+" : ":""}${esc(dv)}</div>` : "";
+  return `<div class="lsign" style="${tstyle(S.el.sign, k)};text-align:${S.alignSign};${bottom?"":"margin-top:12mm"}">${top}${r.signDatePos==="above"?date:""}${r.signDots?`<div class="dots">..............................</div>`:""}${body}${extra}${r.signDatePos!=="above"?date:""}</div>`;
 }
 function pagePort(r){
   const S = r.st, E = S.el, k = S.kP/100, t = totals(r), m = S.mP;
@@ -434,6 +436,9 @@ function tabIsi(){
       ${fSel("signLayout","Susunan",[["inline","Jawatan : Nama (satu baris)"],["below","Nama, jawatan di bawah"],["above","Jawatan di atas, nama di bawah"]])}
       ${fText("signTop","Teks di atas tandatangan (pilihan)","cth. Disahkan oleh,")}
       ${fArea("signExtra","Baris di bawah nama (pilihan)",2,"cth. Pondok ...")}
+      ${fChk("signDateOn","Papar tarikh disahkan")}
+      <div class="row">${fText("signDateLabel","Label tarikh","Tarikh disahkan")}<label><span>Tarikh (kosong = titik untuk tulis tangan)</span><div style="display:flex;gap:6px"><input type="text" id="k_signDate" data-k="signDate" value="${esc(cur().signDate)}" placeholder="cth. 22/10/2025"><button type="button" class="btn sm" data-act="today">Hari ini</button></div></label></div>
+      ${fSel("signDatePos","Kedudukan tarikh",[["below","Di bawah nama"],["above","Di atas garis tandatangan"]])}
       <div class="row">${fChk("signBracket","Nama dalam kurungan ( )")}${fChk("signDots","Garis titik tandatangan")}</div>
     ${fSel("signOn","Letak tandatangan di",[["p2","Halaman 2 (potret)"],["p1","Halaman 1 (landskap)"],["both","Kedua-dua halaman"],["none","Tiada"]])}
     </div>
@@ -610,6 +615,7 @@ $("form").addEventListener("click", e=>{
       toast("Jumlah " + money(tot,true) + " dihantar");
     }
   }
+  else if (act === "today"){ const d = new Date(); r.signDate = `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`; }
   else if (act === "kalkClear") r.kalk = [{k:"",a:""}];
   else if (act === "styleAll"){ db.recs.forEach(x=>{ x.st = clone(r.st); x.label = clone(r.label); x.dec = r.dec; }); toast("Gaya digunakan untuk semua rekod"); }
   else if (act === "styleReset"){ r.st = defStyle(); toast("Gaya asal dipulihkan"); }
@@ -621,7 +627,7 @@ document.querySelector(".tabs").addEventListener("click", e=>{ const b = e.targe
 
 /* ================= Rekod ================= */
 $("recSel").addEventListener("change", e=>{ db.cur = e.target.value; save(); drawForm(); });
-$("bNew").onclick = ()=>{ const c = cur(), x = defaults(); x.st = clone(c.st); x.label = clone(c.label); x.dec = c.dec; ["sign","signJawatan","signLayout","signBracket","signDots","signTop","signExtra","signOn"].forEach(f=>x[f]=c[f]);
+$("bNew").onclick = ()=>{ const c = cur(), x = defaults(); x.st = clone(c.st); x.label = clone(c.label); x.dec = c.dec; ["sign","signJawatan","signLayout","signBracket","signDots","signTop","signExtra","signOn","signDateOn","signDateLabel","signDatePos"].forEach(f=>x[f]=c[f]);
   x.bakiLepas = String(totals(c).baki); x.showBakiLepas = c.showBakiLepas;
   db.recs.unshift(x); db.cur = x.id; db.tab = "isi"; save(); drawForm(); $(idOf("nama")).select(); toast("Rekod baru dibuat. Baki sebelum diambil dari rekod tadi."); };
 $("bDup").onclick = ()=>{ const x = clone(cur()); x.id = uid(); x.nama = (x.nama||"") + " (salinan)"; db.recs.unshift(x); db.cur = x.id; save(); drawForm(); toast("Rekod disalin"); };
