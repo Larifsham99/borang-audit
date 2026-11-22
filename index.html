@@ -5,110 +5,116 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Borang Audit Pengeluaran</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Carlito:wght@400;700&family=Inter:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Carlito:ital,wght@0,400;0,700;1,400;1,700&family=Tinos:ital,wght@0,400;0,700;1,400;1,700&family=Caladea:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@400;500;600&display=swap">
 <style>
-/* Susun atur: bar atas + borang di kiri + pratonton kertas A4 di kanan (bertindan di telefon) */
+/* Susun atur: bar atas + panel bertab di kiri + pratonton kertas A4 di kanan (bertindan di telefon) */
 :root{
   --bg:#eef1ef; --panel:#ffffff; --fg:#1d2a24; --muted:#5d6b64; --line:#d5ddd8;
-  --accent:#1f6b4f; --accent-fg:#ffffff; --danger:#b23a2e; --desk:#cfd6d2;
+  --accent:#1f6b4f; --accent-fg:#ffffff; --danger:#b23a2e; --warn:#9a6a00; --desk:#cfd6d2; --soft:#e3ece7;
   --ui:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
-  --doc:Calibri,"Carlito","Segoe UI",Arial,sans-serif;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#141a17; --panel:#1c2420; --fg:#e4ebe7; --muted:#9aa8a1; --line:#2f3a35;
-  --accent:#4fb08a; --accent-fg:#0d1512; --danger:#e0796d; --desk:#0f1311; color-scheme:dark}}
+  --accent:#4fb08a; --accent-fg:#0d1512; --danger:#e0796d; --warn:#e0b44f; --desk:#0f1311; --soft:#22302a; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#141a17; --panel:#1c2420; --fg:#e4ebe7; --muted:#9aa8a1; --line:#2f3a35;
-  --accent:#4fb08a; --accent-fg:#0d1512; --danger:#e0796d; --desk:#0f1311; color-scheme:dark}
+  --accent:#4fb08a; --accent-fg:#0d1512; --danger:#e0796d; --warn:#e0b44f; --desk:#0f1311; --soft:#22302a; color-scheme:dark}
 
 *{box-sizing:border-box}
 html,body{margin:0;height:100%}
 body{background:var(--bg);color:var(--fg);font:14px/1.45 var(--ui)}
 button,input,textarea,select{font:inherit;color:inherit}
 
-/* ---------- Bar atas ---------- */
 .top{position:sticky;top:0;z-index:5;background:var(--panel);border-bottom:1px solid var(--line);
   display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 16px}
-.top h1{font-size:15px;margin:0 12px 0 0;font-weight:600;letter-spacing:.01em}
+.top h1{font-size:15px;margin:0 12px 0 0;font-weight:600}
 .top .grow{flex:1}
-select,input[type=text],input[type=number],textarea{background:var(--bg);border:1px solid var(--line);
-  border-radius:6px;padding:7px 9px;width:100%}
+select,input[type=text],input[type=number],textarea{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:7px 9px;width:100%;min-width:0}
 textarea{resize:vertical}
 select:focus,input:focus,textarea:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+input:disabled{opacity:.7}
 .rec{width:auto;min-width:200px;max-width:100%}
 .btn{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:7px 12px;cursor:pointer;white-space:nowrap}
-.btn:hover{border-color:var(--accent)}
+.btn:hover:not(:disabled){border-color:var(--accent)}
+.btn:disabled{opacity:.4;cursor:default}
 .btn.pri{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:600}
 .btn.sm{padding:3px 8px;font-size:12px}
 .btn.del{color:var(--danger)}
 
-/* ---------- Kandungan ---------- */
-.main{display:grid;grid-template-columns:minmax(320px,440px) 1fr;min-height:calc(100% - 58px)}
-.form{border-right:1px solid var(--line);padding:16px;overflow:auto;max-height:calc(100vh - 58px);position:sticky;top:58px;
-  display:flex;flex-direction:column;gap:18px}
+.main{display:grid;grid-template-columns:minmax(340px,470px) 1fr}
+.side{border-right:1px solid var(--line);position:sticky;top:58px;max-height:calc(100vh - 58px);display:flex;flex-direction:column;min-width:0}
+.tabs{display:flex;gap:2px;padding:8px 12px 0;border-bottom:1px solid var(--line);background:var(--panel);overflow-x:auto}
+.tabs button{border:0;background:none;padding:8px 12px;border-bottom:2px solid transparent;cursor:pointer;color:var(--muted);font-weight:500;white-space:nowrap}
+.tabs button[aria-selected=true]{color:var(--fg);border-bottom-color:var(--accent)}
+.form{padding:16px;overflow:auto;display:flex;flex-direction:column;gap:16px}
 .preview{background:var(--desk);padding:20px 16px;display:flex;flex-direction:column;align-items:center;gap:24px;min-width:0}
 .preview .cap{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;align-self:flex-start;margin-bottom:-16px}
-.sheet-wrap{position:relative;box-shadow:0 2px 14px rgba(0,0,0,.18);background:#fff}
+.sheet-wrap{position:relative;box-shadow:0 2px 14px rgba(0,0,0,.18);background:#fff;overflow:hidden}
 .sheet-wrap > .page{transform-origin:0 0;position:absolute;left:0;top:0}
+.sheet-wrap.guides .land-in,.sheet-wrap.guides .port-in{background:linear-gradient(rgba(31,107,79,.10),rgba(31,107,79,.10)) content-box}
 
-fieldset{border:1px solid var(--line);border-radius:8px;padding:12px;margin:0;display:flex;flex-direction:column;gap:10px;background:var(--panel)}
+fieldset{border:1px solid var(--line);border-radius:8px;padding:12px;margin:0;display:flex;flex-direction:column;gap:10px;background:var(--panel);min-width:0}
 legend{font-weight:600;padding:0 6px;font-size:13px}
-label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
+label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);min-width:0}
 label > span{text-transform:uppercase;letter-spacing:.05em}
-.row{display:flex;gap:8px;align-items:flex-end}
-.row > *{flex:1;min-width:0}
+.row{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
+.row > *{flex:1;min-width:90px}
+.row > .btn{flex:1 1 auto;min-width:auto}
 .hint{font-size:12px;color:var(--muted);margin:0}
-.calc{font-variant-numeric:tabular-nums;font-size:13px;display:grid;grid-template-columns:1fr auto;gap:2px 12px;
-  background:var(--bg);border-radius:6px;padding:8px 10px}
+.hint code{background:var(--soft);padding:0 4px;border-radius:3px}
+.ev{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;min-height:0}
+.ev.bad{color:var(--danger)}
+.ev:empty{display:none}
+.calc{font-variant-numeric:tabular-nums;font-size:13px;display:grid;grid-template-columns:1fr auto;gap:3px 12px;background:var(--soft);border-radius:6px;padding:10px 12px}
 .calc b{text-align:right}
+.calc .tot{border-top:1px solid var(--line);padding-top:4px;font-weight:700}
 .neg{color:var(--danger)}
+.warn{font-size:12px;color:var(--warn);margin:0}
 .item{border:1px dashed var(--line);border-radius:6px;padding:10px;display:flex;flex-direction:column;gap:8px}
-.item-head{display:flex;gap:6px;align-items:center}
-.item-head strong{flex:1;font-size:12px;color:var(--muted)}
-.amt-row{display:flex;gap:6px}
-.amt-row input{flex:1}
+.head{display:flex;gap:6px;align-items:center}
+.head strong{flex:1;font-size:12px;color:var(--muted)}
+.line{display:grid;grid-template-columns:1fr 110px auto;gap:6px;align-items:start}
+.line .btns{display:flex;gap:3px}
+.line .ev{grid-column:2}
 .check{flex-direction:row;align-items:center;gap:8px;color:var(--fg);font-size:13px}
-.check input{width:auto}
+.check input{width:auto;margin:0}
 input[type=range]{width:100%}
+.ty{width:100%;border-collapse:collapse;font-size:13px}
+.ty th{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:500;text-align:left;padding:4px}
+.ty td{padding:3px 4px;border-top:1px solid var(--line)}
+.ty td:first-child{width:40%}
+.ty input[type=number]{width:70px;padding:4px 6px}
+.tg{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border:1px solid var(--line);border-radius:5px;cursor:pointer;user-select:none}
+.tg input{position:absolute;opacity:0;pointer-events:none}
+.tg:has(input:checked){background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.tg:has(input:focus-visible){outline:2px solid var(--accent)}
+.mgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--fg);color:var(--bg);
   padding:8px 14px;border-radius:6px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20}
 .toast.on{opacity:1}
 
-@media (max-width:860px){
+@media (max-width:900px){
   .main{grid-template-columns:1fr}
-  .form{position:static;max-height:none;border-right:0;border-bottom:1px solid var(--line)}
+  .side{position:static;max-height:none;border-right:0;border-bottom:1px solid var(--line)}
 }
 
-/* ---------- Halaman dokumen (sentiasa putih, macam kertas sebenar) ---------- */
-.page{background:#fff;color:#000;font-family:var(--doc);overflow:hidden;position:relative}
+/* ---------- Halaman dokumen (sentiasa putih) ---------- */
+.page{background:#fff;color:#000;overflow:hidden;position:relative}
 .page.land{width:297mm;height:210mm}
 .page.port{width:210mm;height:297mm}
+.land-in,.port-in{position:absolute;inset:0;display:flex;flex-direction:column}
+.lmain{display:flex;flex-direction:column;width:100%}
+.lsign{margin-top:auto;padding-top:6mm}
+.lsign .dots{letter-spacing:.12em;font-weight:700;margin-bottom:1em}
+.pitems{display:flex;flex-direction:column}
+.it{display:grid;grid-template-columns:var(--nw,1.6em) 1fr}
+.it .n{font-weight:700}
+.sub{display:flex;flex-direction:column;margin-top:.15em}
+.sub > div{display:grid;grid-template-columns:var(--sw,1.5em) 1fr}
+.sub .n{font-weight:700}
+.pnote{white-space:pre-line}
 
-.land-in{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;text-align:center;
-  padding:16mm 20mm 14mm;font-size:calc(1pt * var(--k,1))}
-.land-in .l-year{font-size:44em;font-weight:700;line-height:1.1}
-.land-in .l-big{font-size:34em;font-weight:700;line-height:1.15;margin-top:.55em}
-.land-in .l-amt{font-size:40em;font-weight:700;line-height:1.15;margin-top:.4em}
-.land-in .l-norm{font-size:25em;line-height:1.2;margin-top:.7em}
-.land-in .l-norm + .l-norm{margin-top:.55em}
-.land-in .sign{margin-top:auto;font-size:15em;line-height:1.5}
-.land-in .sign .dots{letter-spacing:.12em;font-weight:700;margin-bottom:1.2em}
-
-.port-in{position:absolute;inset:0;padding:22mm 18mm 18mm 22mm;font-size:calc(1pt * var(--k,1))}
-.port-in .p-title{font-size:21em;font-weight:700;line-height:1.38;text-transform:uppercase;white-space:pre-line;margin:0 0 .5em}
-.port-in ol{list-style:none;margin:0;padding:0}
-.port-in li.it{display:grid;grid-template-columns:1.6em 1fr;font-size:20em;line-height:1.3;margin:.35em 0}
-.port-in li.it .n{font-weight:700}
-.port-in li.it b{font-weight:700}
-.port-in ul.sub{list-style:none;margin:.15em 0 0;padding:0}
-.port-in ul.sub li{display:grid;grid-template-columns:1.4em 1fr;font-size:.87em;line-height:1.3;margin:.12em 0}
-.port-in ul.sub li .n{font-weight:700}
-.port-in .p-total{font-size:28em;font-weight:700;margin-top:1.1em}
-.port-in .p-note{font-size:14em;margin-top:1em;white-space:pre-line}
-
-/* Akar cetakan: tersorok di skrin, digunakan untuk Cetak & PDF */
 #printRoot{position:fixed;left:-10000px;top:0}
-
 @page land{size:A4 landscape;margin:0}
 @page port{size:A4 portrait;margin:0}
 @media print{
@@ -143,60 +149,15 @@ input[type=range]{width:100%}
 </header>
 
 <div class="main">
-  <form class="form" id="form" autocomplete="off" onsubmit="return false">
-
-    <fieldset>
-      <legend>Halaman 1 · Landskap (ringkasan)</legend>
-      <label><span>Nama rekod (untuk senarai sahaja)</span><input type="text" id="f_nama"></label>
-      <div class="row">
-        <label><span>Tahun</span><input type="text" id="f_tahun"></label>
-        <label><span>Pengeluaran ke-</span><input type="text" id="f_ke" placeholder="17 DAN 18"></label>
-      </div>
-      <label><span>Tarikh</span><input type="text" id="f_tarikh" placeholder="(13/10) DAN (22/10) 2025"></label>
-      <div>
-        <label><span>Amaun pengeluaran (RM)</span></label>
-        <div id="amtList" style="display:flex;flex-direction:column;gap:6px;margin-top:4px"></div>
-        <button type="button" class="btn sm" id="bAddAmt" style="margin-top:6px">+ Tambah amaun</button>
-      </div>
-      <label><span>Pembelanjaan (kosongkan = ikut jumlah halaman 2)</span><input type="text" id="f_belanja" placeholder="auto"></label>
-      <div class="calc" id="calc"></div>
-      <label><span>Nama penandatangan</span><input type="text" id="f_sign"></label>
-      <label class="check"><input type="checkbox" id="f_showSign"> Papar ruang tandatangan</label>
-      <label><span>Saiz tulisan landskap: <b id="kLv"></b></span><input type="range" id="f_kL" min="60" max="140" step="2"></label>
-    </fieldset>
-
-    <fieldset>
-      <legend>Halaman 2 · Potret (perincian)</legend>
-      <label><span>Tajuk projek</span><textarea id="f_tajuk" rows="5"></textarea></label>
-      <div id="itemList" style="display:flex;flex-direction:column;gap:10px"></div>
-      <button type="button" class="btn sm" id="bAddItem">+ Tambah perkara</button>
-      <label><span>Catatan bawah (pilihan)</span><textarea id="f_nota" rows="2"></textarea></label>
-      <label><span>Saiz tulisan potret: <b id="kPv"></b></span><input type="range" id="f_kP" min="60" max="140" step="2"></label>
-    </fieldset>
-
-    <fieldset>
-      <legend>Label &amp; tetapan</legend>
-      <div class="row">
-        <label><span>Label pengeluaran</span><input type="text" id="l_pengeluaran"></label>
-        <label><span>Label jumlah</span><input type="text" id="l_jumlah"></label>
-      </div>
-      <div class="row">
-        <label><span>Label belanja</span><input type="text" id="l_belanja"></label>
-        <label><span>Label baki</span><input type="text" id="l_baki"></label>
-      </div>
-      <label class="check"><input type="checkbox" id="f_dec"> Sentiasa papar 2 tempat perpuluhan (cth. RM 7,950.00)</label>
-    </fieldset>
-
-    <fieldset>
-      <legend>Simpanan</legend>
-      <p class="hint">Semua rekod disimpan automatik dalam pelayar ini. Buat sandaran ke fail supaya tidak hilang atau untuk dipindah ke komputer lain.</p>
-      <div class="row">
-        <button type="button" class="btn" id="bExport">Simpan sandaran (.json)</button>
-        <button type="button" class="btn" id="bImport">Buka sandaran</button>
-      </div>
-      <input type="file" id="fileIn" accept=".json,application/json" hidden>
-    </fieldset>
-  </form>
+  <aside class="side">
+    <nav class="tabs" role="tablist">
+      <button role="tab" data-tab="isi">Isi borang</button>
+      <button role="tab" data-tab="kira">Kalkulator</button>
+      <button role="tab" data-tab="gaya">Tulisan &amp; margin</button>
+      <button role="tab" data-tab="simpan">Simpanan</button>
+    </nav>
+    <form class="form" id="form" autocomplete="off" onsubmit="return false"></form>
+  </aside>
 
   <section class="preview" id="preview" aria-label="Pratonton">
     <div class="cap">Halaman 1 · A4 landskap</div>
@@ -208,6 +169,7 @@ input[type=range]{width:100%}
 
 <div id="printRoot"></div>
 <div class="toast" id="toast"></div>
+<input type="file" id="fileIn" accept=".json,application/json" hidden>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
@@ -218,86 +180,155 @@ const KEY = "borangAudit.v1";
 const $ = id => document.getElementById(id);
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const clone = o => JSON.parse(JSON.stringify(o));
 
-function sample(){
+/* ================= Data asas ================= */
+const FONTS = {
+  calibri: {n:"Calibri", css:'Calibri,"Carlito",Arial,sans-serif'},
+  arial:   {n:"Arial", css:'Arial,"Liberation Sans",Helvetica,sans-serif'},
+  times:   {n:"Times New Roman", css:'"Times New Roman","Tinos",Times,serif'},
+  cambria: {n:"Cambria", css:'Cambria,"Caladea",Georgia,serif'},
+  tahoma:  {n:"Tahoma", css:'Tahoma,Verdana,sans-serif'}
+};
+const EL_L = [["year","Tahun"],["ke","Pengeluaran ke-"],["tarikh","Tarikh"],["amt","Amaun pengeluaran"],["bakiLepas","Baki sebelum"],["belanja","Pembelanjaan"],["baki","Baki dibawa kehadapan"],["extra","Baris tambahan"],["sign","Tandatangan"]];
+const EL_P = [["tajuk","Tajuk projek"],["item","Nama perkara"],["itemAmt","Amaun perkara"],["sub","Pecahan (a, b, c)"],["subAmt","Amaun pecahan"],["jumlah","Jumlah"],["nota","Catatan"]];
+function defStyle(){
   return {
-    id: uid(), nama: "Pengeluaran 17 & 18 (2025) — contoh",
-    tahun: "2025", ke: "17 DAN 18", tarikh: "(13/10) DAN (22/10) 2025",
-    amaun: [70000, 30000], belanja: "",
-    sign: "USTAZ MD MUKHTAR BIN HAJI OMAR ZUHDI", showSign: true,
-    tajuk: "NAIK TARAF GARAJ KERETA BELAKANG KANTIN – KANDANG SEMBELIHAN – TUKAR SET CERMIN NAKO ASRAMA BELAKANG – TAMBAHAN PONDOK KAYU (PONDOK BELAKANG) – JALAN WARGA EMAS SERTA BEREK D11 HINGGA D15",
-    items: [
-      {nama:"BARANG HARDWARE", amaun:43547.85, sub:""},
-      {nama:"KERJA BESI", amaun:7950, sub:""},
-      {nama:"WIRING", amaun:961, sub:""},
-      {nama:"UPAH TUKANG", amaun:42300, sub:"Naik taraf garaj belakang kantin\nNaik taraf kendang sembelihan\nPondok kayu E21 dan E22\nPemasangan palung air bumbung dorm\nTukar set cermin nako\nNaik taraf jalan warga emas dan penambahan saluran kumbahan\nNaik taraf bilik D11 hingga D15"}
-    ],
-    nota: "",
-    label: {pengeluaran:"PENGELUARAN KE-", belanja:"PEMBELANJAAN", baki:"BAKI DIBAWA KEHADAPAN", jumlah:"JUMLAH"},
-    kL: 100, kP: 100, dec: false
+    font:"calibri", lh:1.25, kL:100, kP:100,
+    mL:{t:16,r:20,b:14,l:20}, mP:{t:22,r:18,b:18,l:22},
+    gapL:5, gapP:2.5, gapTitle:4, gapJumlah:9,
+    alignL:"center", vL:"top", alignSign:"center", alignTajuk:"left", upper:true,
+    numStyle:"num", subStyle:"alpha",
+    el:{
+      year:{s:44,b:1,i:0,u:0}, ke:{s:34,b:1,i:0,u:0}, tarikh:{s:34,b:1,i:0,u:0}, amt:{s:40,b:1,i:0,u:0},
+      bakiLepas:{s:25,b:0,i:0,u:0}, belanja:{s:25,b:0,i:0,u:0}, baki:{s:25,b:0,i:0,u:0}, extra:{s:18,b:0,i:0,u:0}, sign:{s:15,b:0,i:0,u:0},
+      tajuk:{s:21,b:1,i:0,u:0}, item:{s:20,b:0,i:0,u:0}, itemAmt:{s:20,b:1,i:0,u:0}, sub:{s:17,b:0,i:0,u:0}, subAmt:{s:17,b:0,i:0,u:0},
+      jumlah:{s:28,b:1,i:0,u:0}, nota:{s:14,b:0,i:0,u:0}
+    }
   };
 }
-function blank(prev){
-  const s = sample();
-  return Object.assign(s, {
-    nama: "Pengeluaran baru", ke: "", tarikh: "", amaun: [0], belanja: "",
-    sign: prev ? prev.sign : s.sign, tajuk: "", items: [{nama:"", amaun:0, sub:""}], nota: "",
-    label: prev ? {...prev.label} : s.label
+const newItem = () => ({nama:"", amaun:"", auto:false, showSubAmt:false, sub:[]});
+function defaults(){
+  return {
+    id: uid(), nama:"Pengeluaran baru", tahun:String(new Date().getFullYear()), ke:"", tarikh:"",
+    amaun:[""], bakiLepas:"", showBakiLepas:false, belanja:"",
+    sign:"", showSign:true, extraL:"",
+    tajuk:"", items:[newItem()], nota:"",
+    label:{pengeluaran:"PENGELUARAN KE-", belanja:"PEMBELANJAAN", baki:"BAKI DIBAWA KEHADAPAN", jumlah:"JUMLAH", bakiLepas:"BAKI SEBELUM"},
+    dec:false, kalk:[{k:"",a:""}], st:defStyle()
+  };
+}
+function sample(){
+  const r = defaults();
+  return Object.assign(r, {
+    nama:"Pengeluaran 17 & 18 (2025) — contoh", tahun:"2025", ke:"17 DAN 18", tarikh:"(13/10) DAN (22/10) 2025",
+    amaun:["70000","30000"], sign:"USTAZ MD MUKHTAR BIN HAJI OMAR ZUHDI",
+    tajuk:"NAIK TARAF GARAJ KERETA BELAKANG KANTIN – KANDANG SEMBELIHAN – TUKAR SET CERMIN NAKO ASRAMA BELAKANG – TAMBAHAN PONDOK KAYU (PONDOK BELAKANG) – JALAN WARGA EMAS SERTA BEREK D11 HINGGA D15",
+    items:[
+      {nama:"BARANG HARDWARE", amaun:"43547.85", auto:false, showSubAmt:false, sub:[]},
+      {nama:"KERJA BESI", amaun:"7950", auto:false, showSubAmt:false, sub:[]},
+      {nama:"WIRING", amaun:"961", auto:false, showSubAmt:false, sub:[]},
+      {nama:"UPAH TUKANG", amaun:"42300", auto:false, showSubAmt:false, sub:[
+        "Naik taraf garaj belakang kantin","Naik taraf kendang sembelihan","Pondok kayu E21 dan E22","Pemasangan palung air bumbung dorm",
+        "Tukar set cermin nako","Naik taraf jalan warga emas dan penambahan saluran kumbahan","Naik taraf bilik D11 hingga D15"].map(t=>({t,a:""}))}
+    ],
+    kalk:[{k:"Resit kedai A",a:"12500.50"},{k:"Resit kedai B",a:"8000 + 1250.35"}]
   });
 }
+function merge(d, s){
+  if (s == null || typeof d !== "object" || Array.isArray(d)) return s ?? d;
+  if (typeof s !== "object" || Array.isArray(s)) return d;
+  const o = {...s}; for (const k in d) o[k] = merge(d[k], s[k]); return o;
+}
+function normalize(r){
+  const m = merge(defaults(), r);
+  if (r && r.kL) m.st.kL = r.kL; if (r && r.kP) m.st.kP = r.kP;
+  m.amaun = (m.amaun||[]).map(String); if (!m.amaun.length) m.amaun = [""];
+  m.items = (m.items||[]).map(it => {
+    const x = Object.assign(newItem(), it); x.amaun = String(x.amaun ?? "");
+    if (typeof x.sub === "string") x.sub = x.sub.split("\n").map(t=>t.trim()).filter(Boolean).map(t=>({t,a:""}));
+    x.sub = (x.sub||[]).map(s => typeof s === "string" ? {t:s,a:""} : {t:s.t||"", a:String(s.a??"")});
+    return x;
+  });
+  if (!Array.isArray(m.kalk) || !m.kalk.length) m.kalk = [{k:"",a:""}];
+  return m;
+}
 
-/* ---------- Simpanan ---------- */
-let db = {recs: [], cur: null};
-try { const raw = localStorage.getItem(KEY); if (raw) db = JSON.parse(raw); } catch(e){}
-if (!Array.isArray(db.recs) || !db.recs.length){ const s = sample(); db = {recs:[s], cur:s.id}; }
+/* ================= Simpanan ================= */
+let db = {recs:[], cur:null, tab:"isi", guides:false};
+try { const raw = localStorage.getItem(KEY); if (raw) db = Object.assign(db, JSON.parse(raw)); } catch(e){}
+db.recs = (Array.isArray(db.recs) ? db.recs : []).map(normalize);
+if (!db.recs.length){ const s = normalize(sample()); db.recs = [s]; db.cur = s.id; }
 let saveT;
 function save(){ clearTimeout(saveT); saveT = setTimeout(()=>{ try{ localStorage.setItem(KEY, JSON.stringify(db)); }catch(e){} }, 250); }
 const cur = () => db.recs.find(r => r.id === db.cur) || db.recs[0];
+const getP = (o,p) => p.split(".").reduce((a,k)=>a==null?a:a[k], o);
+function setP(o,p,v){ const ks=p.split("."), last=ks.pop(); const t=ks.reduce((a,k)=>a[k],o); t[last]=v; }
 
-/* ---------- Nombor ---------- */
-const num = v => { const n = parseFloat(String(v).replace(/[^0-9.\-]/g,"")); return isFinite(n) ? n : 0; };
-const r2 = n => Math.round(n*100)/100;
-function fmt(n, dec){
-  n = r2(n);
-  const frac = !Number.isInteger(n) || dec;
-  return n.toLocaleString("en-US", {minimumFractionDigits: frac?2:0, maximumFractionDigits: 2});
+/* ================= Kalkulator / nombor ================= */
+function ev(x){
+  let s = String(x ?? "").trim(); if (!s) return 0;
+  s = s.replace(/rm/gi,"").replace(/,/g,"").replace(/[x×]/gi,"*").replace(/÷/g,"/").replace(/\s+/g,"");
+  if (!/^[0-9.+\-*/()%]+$/.test(s)) return NaN;
+  s = s.replace(/(\d+(?:\.\d+)?)%/g,"($1/100)");
+  try { const v = Function('"use strict";return(' + s + ')')(); return (typeof v==="number" && isFinite(v)) ? v : NaN; } catch(e){ return NaN; }
 }
-function money(n, dec){ return (n < 0 ? "- " : "") + "RM " + fmt(Math.abs(n), dec); }
+const n = x => { const v = ev(x); return isNaN(v) ? 0 : v; };
+const isFormula = x => /[+\-*/x×÷%()]/i.test(String(x||"").replace(/^\s*-/,""));
+const r2 = v => Math.round(v*100)/100;
+function fmt(v, dec){ v = r2(v); const f = !Number.isInteger(v) || dec; return v.toLocaleString("en-US",{minimumFractionDigits:f?2:0, maximumFractionDigits:2}); }
+const money = (v, dec) => (v < 0 ? "- " : "") + "RM " + fmt(Math.abs(v), dec);
+const itemAmt = it => it.auto ? r2(it.sub.reduce((a,s)=>a+n(s.a),0)) : r2(n(it.amaun));
 function totals(r){
-  const masuk = r2(r.amaun.reduce((a,b)=>a+num(b),0));
-  const jumlah = r2(r.items.reduce((a,it)=>a+num(it.amaun),0));
-  const belanja = String(r.belanja).trim() === "" ? jumlah : r2(num(r.belanja));
-  return {masuk, jumlah, belanja, baki: r2(masuk - belanja)};
+  const keluar = r2(r.amaun.reduce((a,b)=>a+n(b),0));
+  const lepas = r2(n(r.bakiLepas));
+  const dana = r2(keluar + lepas);
+  const jumlah = r2(r.items.reduce((a,it)=>a+itemAmt(it),0));
+  const manual = String(r.belanja).trim() !== "";
+  const belanja = manual ? r2(n(r.belanja)) : jumlah;
+  return {keluar, lepas, dana, jumlah, belanja, manual, baki:r2(dana - belanja)};
 }
 
-/* ---------- Jana halaman ---------- */
+/* ================= Jana halaman ================= */
+function tstyle(e, k){ return `font-size:${(e.s*k).toFixed(2)}pt;font-weight:${e.b?700:400};font-style:${e.i?"italic":"normal"};text-decoration:${e.u?"underline":"none"}`; }
+function roman(i){ return ["i","ii","iii","iv","v","vi","vii","viii","ix","x","xi","xii","xiii","xiv","xv","xvi","xvii","xviii","xix","xx"][i] || String(i+1); }
+function subMark(st, j){ return {alpha:"abcdefghijklmnopqrstuvwxyz"[j%26]+".", roman:roman(j)+".", dash:"–", dot:"•", none:""}[st] ?? ""; }
 function pageLand(r){
-  const t = totals(r), L = r.label;
-  const amts = r.amaun.map((a,i)=> (i===0 ? "RM " : "") + fmt(num(a), r.dec)).join(" + ");
-  return `<div class="page land"><div class="land-in" style="--k:${r.kL/100}">
-    ${r.tahun ? `<div class="l-year">(${esc(r.tahun)})</div>` : ""}
-    <div class="l-big">${esc(L.pengeluaran)} ${esc(r.ke)}</div>
-    ${r.tarikh ? `<div class="l-big">${esc(r.tarikh)}</div>` : ""}
-    <div class="l-amt">= ${amts}</div>
-    <div class="l-norm">${esc(L.belanja)} = ${money(t.belanja, r.dec)}</div>
-    <div class="l-norm">${esc(L.baki)} = ${money(t.baki, r.dec)}</div>
-    ${r.showSign ? `<div class="sign"><div class="dots">..............................</div>(${esc(r.sign)})</div>` : ""}
+  const S = r.st, E = S.el, k = S.kL/100, t = totals(r), L = r.label, m = S.mL;
+  const ts = key => tstyle(E[key], k);
+  const amts = r.amaun.filter(a=>String(a).trim()!=="").map((a,i)=> (i===0?"RM ":"") + fmt(n(a), r.dec)).join(" + ") || "RM 0";
+  const extra = String(r.extraL||"").split("\n").filter(l=>l.trim()).map(l=>`<div style="${ts("extra")}">${esc(l)}</div>`).join("");
+  return `<div class="page land" style="font-family:${FONTS[S.font].css};line-height:${S.lh}"><div class="land-in" style="padding:${m.t}mm ${m.r}mm ${m.b}mm ${m.l}mm">
+    <div class="lmain" style="gap:${S.gapL}mm;text-align:${S.alignL};${S.vL==="center"?"margin-block:auto":""}">
+      ${r.tahun ? `<div style="${ts("year")}">(${esc(r.tahun)})</div>` : ""}
+      <div style="${ts("ke")}">${esc(L.pengeluaran)} ${esc(r.ke)}</div>
+      ${r.tarikh ? `<div style="${ts("tarikh")}">${esc(r.tarikh)}</div>` : ""}
+      <div style="${ts("amt")}">= ${amts}</div>
+      ${r.showBakiLepas ? `<div style="${ts("bakiLepas")}">${esc(L.bakiLepas)} = ${money(t.lepas, r.dec)}</div>` : ""}
+      <div style="${ts("belanja")}">${esc(L.belanja)} = ${money(t.belanja, r.dec)}</div>
+      <div style="${ts("baki")}">${esc(L.baki)} = ${money(t.baki, r.dec)}</div>
+      ${extra}
+    </div>
+    ${r.showSign ? `<div class="lsign" style="${ts("sign")};text-align:${S.alignSign}"><div class="dots">..............................</div>${r.sign.trim()?`(${esc(r.sign)})`:""}</div>` : ""}
   </div></div>`;
 }
 function pagePort(r){
-  const t = totals(r), letters = "abcdefghijklmnopqrstuvwxyz";
+  const S = r.st, E = S.el, k = S.kP/100, t = totals(r), m = S.mP;
+  const ts = key => tstyle(E[key], k);
   const items = r.items.map((it,i)=>{
-    const subs = String(it.sub||"").split("\n").map(s=>s.trim()).filter(Boolean);
-    const amt = `<b>${money(num(it.amaun), r.dec)}</b>`;
+    const subs = it.sub.filter(s=>s.t.trim() || String(s.a).trim());
+    const amt = `<span style="${ts("itemAmt")}">${money(itemAmt(it), r.dec)}</span>`;
     const head = subs.length ? `${esc(it.nama)} = ${amt} :` : `${esc(it.nama)} ${amt}`;
-    const sl = subs.length ? `<ul class="sub">${subs.map((s,j)=>`<li><span class="n">${letters[j%26]}.</span><span>${esc(s)}</span></li>`).join("")}</ul>` : "";
-    return `<li class="it"><span class="n">${i+1}.</span><div>${head}${sl}</div></li>`;
+    const sl = subs.length ? `<div class="sub" style="${ts("sub")};--sw:${S.subStyle==="none"?"0":S.subStyle==="roman"?"2em":"1.5em"}">${subs.map((s,j)=>
+      `<div><span class="n">${subMark(S.subStyle,j)}</span><span>${esc(s.t)}${it.showSubAmt && String(s.a).trim() ? ` = <span style="${ts("subAmt")}">${money(n(s.a), r.dec)}</span>` : ""}</span></div>`).join("")}</div>` : "";
+    const num = S.numStyle==="num" ? `${i+1}.` : S.numStyle==="paren" ? `${i+1})` : "";
+    return `<div class="it" style="${ts("item")};--nw:${S.numStyle==="none"?"0":"1.6em"}"><span class="n">${num}</span><div>${head}${sl}</div></div>`;
   }).join("");
-  return `<div class="page port"><div class="port-in" style="--k:${r.kP/100}">
-    ${r.tajuk ? `<div class="p-title">${esc(r.tajuk)}</div>` : ""}
-    <ol>${items}</ol>
-    <div class="p-total">${esc(r.label.jumlah)} ${money(t.jumlah, r.dec)}</div>
-    ${r.nota ? `<div class="p-note">${esc(r.nota)}</div>` : ""}
+  return `<div class="page port" style="font-family:${FONTS[S.font].css};line-height:${S.lh}"><div class="port-in" style="padding:${m.t}mm ${m.r}mm ${m.b}mm ${m.l}mm">
+    ${r.tajuk ? `<div style="${ts("tajuk")};text-align:${S.alignTajuk};text-transform:${S.upper?"uppercase":"none"};white-space:pre-line;line-height:${S.lh*1.1};margin-bottom:${S.gapTitle}mm">${esc(r.tajuk)}</div>` : ""}
+    <div class="pitems" style="gap:${S.gapP}mm">${items}</div>
+    <div style="${ts("jumlah")};margin-top:${S.gapJumlah}mm">${esc(r.label.jumlah)} ${money(t.jumlah, r.dec)}</div>
+    ${r.nota ? `<div class="pnote" style="${ts("nota")};margin-top:6mm">${esc(r.nota)}</div>` : ""}
   </div></div>`;
 }
 
@@ -305,125 +336,280 @@ const MM = 96/25.4;
 function fitPreview(){
   const avail = Math.max(260, $("preview").clientWidth - 32);
   [["wrapL",297,210],["wrapP",210,297]].forEach(([id,w,h])=>{
-    const el = $(id), pw = w*MM, ph = h*MM;
-    const s = Math.min(1, avail/pw);
-    el.style.width = pw*s + "px"; el.style.height = ph*s + "px";
+    const el = $(id), pw = w*MM, ph = h*MM, s = Math.min(1, avail/pw);
+    el.style.width = pw*s+"px"; el.style.height = ph*s+"px";
     const pg = el.firstElementChild; if (pg) pg.style.transform = `scale(${s})`;
   });
 }
 function render(){
   const r = cur();
-  $("wrapL").innerHTML = pageLand(r);
-  $("wrapP").innerHTML = pagePort(r);
+  $("wrapL").innerHTML = pageLand(r); $("wrapP").innerHTML = pagePort(r);
   $("printRoot").innerHTML = pageLand(r) + pagePort(r);
-  fitPreview();
-  const t = totals(r);
-  $("calc").innerHTML = `<span>Jumlah pengeluaran</span><b>${money(t.masuk,true)}</b>
-    <span>Jumlah perkara (halaman 2)</span><b>${money(t.jumlah,true)}</b>
-    <span>Pembelanjaan</span><b>${money(t.belanja,true)}</b>
-    <span>Baki dibawa kehadapan</span><b class="${t.baki<0?"neg":""}">${money(t.baki,true)}</b>`;
-  $("kLv").textContent = r.kL + "%"; $("kPv").textContent = r.kP + "%";
+  $("wrapL").classList.toggle("guides", !!db.guides); $("wrapP").classList.toggle("guides", !!db.guides);
+  fitPreview(); refresh();
   const opt = $("recSel").querySelector(`option[value="${r.id}"]`); if (opt) opt.textContent = r.nama || "(tanpa nama)";
 }
 
-/* ---------- Borang ---------- */
-const simple = {f_nama:"nama", f_tahun:"tahun", f_ke:"ke", f_tarikh:"tarikh", f_belanja:"belanja", f_sign:"sign", f_tajuk:"tajuk", f_nota:"nota"};
-function fillForm(){
-  const r = cur();
-  for (const [id,k] of Object.entries(simple)) $(id).value = r[k] ?? "";
-  $("f_showSign").checked = !!r.showSign; $("f_dec").checked = !!r.dec;
-  $("f_kL").value = r.kL; $("f_kP").value = r.kP;
-  for (const k of ["pengeluaran","belanja","baki","jumlah"]) $("l_"+k).value = r.label[k];
-  $("recSel").innerHTML = db.recs.map(x=>`<option value="${x.id}">${esc(x.nama||"(tanpa nama)")}</option>`).join("");
-  $("recSel").value = r.id;
-  drawAmts(); drawItems(); render();
+/* ================= Komponen borang ================= */
+const idOf = p => "k_" + p.replace(/\./g,"_");
+const val = p => getP(cur(), p);
+const fText = (p, lab, ph="") => `<label><span>${lab}</span><input type="text" id="${idOf(p)}" data-k="${p}" value="${esc(val(p))}" placeholder="${esc(ph)}"></label>`;
+const fArea = (p, lab, rows=3, ph="") => `<label><span>${lab}</span><textarea id="${idOf(p)}" data-k="${p}" rows="${rows}" placeholder="${esc(ph)}">${esc(val(p))}</textarea></label>`;
+const fNum = (p, lab, min, max, step=1) => `<label><span>${lab}</span><input type="number" id="${idOf(p)}" data-k="${p}" data-t="n" min="${min}" max="${max}" step="${step}" value="${val(p)}"></label>`;
+const fChk = (p, lab, redraw) => `<label class="check"><input type="checkbox" id="${idOf(p)}" data-k="${p}" data-t="b" ${redraw?'data-redraw="1"':""} ${val(p)?"checked":""}> ${lab}</label>`;
+const fSel = (p, lab, opts) => `<label><span>${lab}</span><select id="${idOf(p)}" data-k="${p}">${opts.map(([v,t])=>`<option value="${v}" ${String(val(p))===v?"selected":""}>${t}</option>`).join("")}</select></label>`;
+const fRange = (p, lab, min, max, step, unit) => `<label><span>${lab}: <b data-show="${p}">${val(p)}${unit}</b></span><input type="range" id="${idOf(p)}" data-k="${p}" data-t="n" data-unit="${unit}" min="${min}" max="${max}" step="${step}" value="${val(p)}"></label>`;
+const fExpr = (p, ph="0.00", dis=false, aria="Amaun") => `<input type="text" inputmode="decimal" id="${idOf(p)}" data-k="${p}" data-expr value="${esc(val(p))}" placeholder="${ph}" aria-label="${aria}" ${dis?"disabled":""}>`;
+const evOut = p => `<div class="ev" data-ev="${p}"></div>`;
+const bt = (act, p, i, txt, cls="", dis=false, aria="") => `<button type="button" class="btn sm ${cls}" data-act="${act}" data-p="${p}" data-i="${i}" ${dis?"disabled":""} ${aria?`aria-label="${aria}"`:""}>${txt}</button>`;
+const moveBtns = (p, i, len) => bt("up",p,i,"↑","",i===0,"Naik") + bt("down",p,i,"↓","",i===len-1,"Turun") + bt("del",p,i,"✕","del",false,"Buang");
+
+function tabIsi(){
+  const r = cur(), others = db.recs.filter(x=>x.id!==r.id);
+  const amts = r.amaun.map((a,i)=>`<div class="line"><div>${fExpr("amaun."+i,"cth. 70000","",`Amaun ${i+1}`)}</div><div></div><div class="btns">${moveBtns("amaun",i,r.amaun.length)}</div>${evOut("amaun."+i)}</div>`).join("");
+  const items = r.items.map((it,i)=>{
+    const P = "items."+i;
+    const subs = it.sub.map((s,j)=>`<div class="line"><input type="text" id="${idOf(P+".sub."+j+".t")}" data-k="${P}.sub.${j}.t" value="${esc(s.t)}" placeholder="Keterangan pecahan">
+      <div>${fExpr(P+".sub."+j+".a","amaun (pilihan)",false,"Amaun pecahan")}</div><div class="btns">${moveBtns(P+".sub",j,it.sub.length)}</div>${evOut(P+".sub."+j+".a")}</div>`).join("");
+    return `<div class="item">
+      <div class="head"><strong>Perkara ${i+1}</strong>${moveBtns("items",i,r.items.length)}</div>
+      ${fText(P+".nama","Nama perkara","cth. BARANG HARDWARE")}
+      <label><span>Amaun (RM) — boleh tulis formula</span>${fExpr(P+".amaun", it.auto?"auto dari pecahan":"cth. 1200+350*2", it.auto)}</label>
+      ${evOut(P+".amaun")}
+      <div style="display:flex;flex-direction:column;gap:6px"><span class="hint">Pecahan a, b, c…</span>${subs}
+        <div>${bt("add",P+".sub","sub","+ Pecahan")}</div></div>
+      ${fChk(P+".auto","Amaun perkara = campur semua amaun pecahan",true)}
+      ${fChk(P+".showSubAmt","Papar amaun pecahan dalam dokumen")}
+    </div>`;
+  }).join("");
+  return `
+  <fieldset><legend>Halaman 1 · Landskap (ringkasan)</legend>
+    ${fText("nama","Nama rekod (untuk senarai sahaja)")}
+    <div class="row">${fText("tahun","Tahun")}${fText("ke","Pengeluaran ke-","17 DAN 18")}</div>
+    ${fText("tarikh","Tarikh","(13/10) DAN (22/10) 2025")}
+    <div style="display:flex;flex-direction:column;gap:6px"><span class="hint" style="text-transform:uppercase;letter-spacing:.05em">Amaun pengeluaran (RM)</span>${amts}
+      <div>${bt("add","amaun","amt","+ Tambah amaun")}</div></div>
+    <label><span>Baki sebelum (dibawa dari pengeluaran lepas)</span>${fExpr("bakiLepas","0")}</label>${evOut("bakiLepas")}
+    ${others.length ? `<label><span>Ambil baki dari rekod lain</span><select id="ambilBaki"><option value="">— pilih rekod —</option>${others.map(o=>`<option value="${o.id}">${esc(o.nama)} (baki ${money(totals(o).baki,true)})</option>`).join("")}</select></label>` : ""}
+    ${fChk("showBakiLepas","Papar baris baki sebelum dalam dokumen")}
+    <label><span>Pembelanjaan (kosong = ikut jumlah halaman 2)</span>${fExpr("belanja","auto")}</label>${evOut("belanja")}
+    <div class="calc" data-sum></div><p class="warn" data-warn hidden></p>
+    ${fText("sign","Nama penandatangan")}
+    ${fChk("showSign","Papar ruang tandatangan")}
+    ${fArea("extraL","Baris tambahan (satu baris satu, pilihan)",2,"cth. DISEMAK OLEH: ...")}
+  </fieldset>
+  <fieldset><legend>Halaman 2 · Potret (perincian)</legend>
+    ${fArea("tajuk","Tajuk projek",4)}
+    <div style="display:flex;flex-direction:column;gap:10px">${items}</div>
+    <div>${bt("add","items","item","+ Tambah perkara")}</div>
+    ${fArea("nota","Catatan bawah (pilihan)",2)}
+  </fieldset>`;
 }
-function drawAmts(){
+
+function tabKira(){
   const r = cur();
-  $("amtList").innerHTML = r.amaun.map((a,i)=>`<div class="amt-row">
-    <input type="number" step="0.01" inputmode="decimal" id="amt_${i}" data-amt="${i}" value="${a}" aria-label="Amaun ${i+1}">
-    ${r.amaun.length>1 ? `<button type="button" class="btn sm del" data-delamt="${i}" aria-label="Buang amaun">✕</button>` : ""}</div>`).join("");
-}
-function drawItems(){
-  const r = cur();
-  $("itemList").innerHTML = r.items.map((it,i)=>`<div class="item">
-    <div class="item-head"><strong>Perkara ${i+1}</strong>
-      <button type="button" class="btn sm" data-mv="${i}:-1" ${i===0?"disabled":""} aria-label="Naik">↑</button>
-      <button type="button" class="btn sm" data-mv="${i}:1" ${i===r.items.length-1?"disabled":""} aria-label="Turun">↓</button>
-      <button type="button" class="btn sm del" data-delit="${i}">Buang</button></div>
+  const rows = r.kalk.map((x,i)=>`<div class="line"><input type="text" id="${idOf("kalk."+i+".k")}" data-k="kalk.${i}.k" value="${esc(x.k)}" placeholder="Keterangan / no. resit">
+    <div>${fExpr("kalk."+i+".a","0.00")}</div><div class="btns">${moveBtns("kalk",i,r.kalk.length)}</div>${evOut("kalk."+i+".a")}</div>`).join("");
+  return `
+  <fieldset><legend>Semakan logik pembelanjaan</legend>
+    <div class="calc" data-logic></div><p class="warn" data-warn hidden></p>
+    <p class="hint">Baki = (Baki sebelum + semua amaun pengeluaran) − Pembelanjaan. Pembelanjaan ikut jumlah semua perkara, kecuali jika diisi sendiri.</p>
+  </fieldset>
+  <fieldset><legend>Kalkulator resit</legend>
+    <p class="hint">Masukkan resit atau kiraan satu per satu. Setiap ruangan amaun boleh tulis formula: <code>1200+350*2</code>, <code>4 x 125.50</code>, <code>5000*6%</code>, <code>(800+200)/2</code>.</p>
+    ${rows}
+    <div>${bt("add","kalk","kalk","+ Tambah baris")}</div>
+    <div class="calc"><span>Jumlah kalkulator</span><b data-kalktot></b></div>
+    <label><span>Hantar hasil ke</span><select id="kalkTo">
+      ${r.items.map((it,i)=>`<option value="item:${i}">Perkara ${i+1}: ${esc(it.nama||"(tanpa nama)")}</option>`).join("")}
+      <option value="newitem">Perkara baru</option><option value="belanja">Pembelanjaan (manual)</option>
+      <option value="amaun">Amaun pengeluaran baru</option><option value="bakiLepas">Baki sebelum</option></select></label>
     <div class="row">
-      <label style="flex:2"><span>Perkara</span><input type="text" id="it_n_${i}" data-it="${i}" data-f="nama" value="${esc(it.nama)}"></label>
-      <label><span>Amaun (RM)</span><input type="number" step="0.01" inputmode="decimal" id="it_a_${i}" data-it="${i}" data-f="amaun" value="${it.amaun}"></label>
+      <button type="button" class="btn pri" data-act="kalkSend">Hantar jumlah</button>
+      <button type="button" class="btn" data-act="kalkSub" title="Setiap baris menjadi pecahan a, b, c… perkara yang dipilih">Hantar sebagai pecahan</button>
+      <button type="button" class="btn del" data-act="kalkClear">Kosongkan</button>
     </div>
-    <label><span>Pecahan a, b, c… (satu baris satu, pilihan)</span><textarea rows="${Math.max(2, String(it.sub||"").split("\n").length)}" id="it_s_${i}" data-it="${i}" data-f="sub">${esc(it.sub)}</textarea></label>
-  </div>`).join("");
+  </fieldset>`;
 }
 
-$("form").addEventListener("input", e=>{
-  const el = e.target, r = cur();
-  if (simple[el.id]) r[simple[el.id]] = el.value;
-  else if (el.id === "f_showSign") r.showSign = el.checked;
-  else if (el.id === "f_dec") r.dec = el.checked;
-  else if (el.id === "f_kL") r.kL = +el.value;
-  else if (el.id === "f_kP") r.kP = +el.value;
-  else if (el.id.startsWith("l_")) r.label[el.id.slice(2)] = el.value;
-  else if (el.dataset.amt != null) r.amaun[+el.dataset.amt] = el.value === "" ? 0 : num(el.value);
-  else if (el.dataset.it != null){ const it = r.items[+el.dataset.it], f = el.dataset.f; it[f] = f==="amaun" ? (el.value===""?0:num(el.value)) : el.value; }
-  else return;
-  save(); render();
-});
-$("form").addEventListener("click", e=>{
-  const b = e.target.closest("button"); if (!b) return;
-  const r = cur();
-  if (b.dataset.delamt != null){ r.amaun.splice(+b.dataset.delamt,1); drawAmts(); }
-  else if (b.dataset.delit != null){ r.items.splice(+b.dataset.delit,1); if(!r.items.length) r.items.push({nama:"",amaun:0,sub:""}); drawItems(); }
-  else if (b.dataset.mv){ const [i,d] = b.dataset.mv.split(":").map(Number), j=i+d; [r.items[i],r.items[j]]=[r.items[j],r.items[i]]; drawItems(); }
-  else if (b.id === "bAddAmt"){ r.amaun.push(0); drawAmts(); $("amt_"+(r.amaun.length-1)).focus(); }
-  else if (b.id === "bAddItem"){ r.items.push({nama:"",amaun:0,sub:""}); drawItems(); $("it_n_"+(r.items.length-1)).focus(); }
-  else if (b.id === "bExport") return exportJson();
-  else if (b.id === "bImport") return $("fileIn").click();
-  else return;
-  save(); render();
-});
+function tabGaya(){
+  const tyRows = list => list.map(([k,lab])=>{ const P="st.el."+k; return `<tr><td>${lab}</td>
+    <td><input type="number" id="${idOf(P+".s")}" data-k="${P}.s" data-t="n" min="6" max="90" step="0.5" value="${val(P+".s")}" aria-label="Saiz ${lab}"></td>
+    ${[["b","B","font-weight:700","Tebal"],["i","I","font-style:italic","Condong"],["u","U","text-decoration:underline","Garis bawah"]].map(([f,t,css,a])=>
+      `<td><label class="tg" title="${a}" style="${css}"><input type="checkbox" id="${idOf(P+"."+f)}" data-k="${P}.${f}" data-t="b01" ${val(P+"."+f)?"checked":""} aria-label="${a} ${lab}">${t}</label></td>`).join("")}</tr>`; }).join("");
+  const mg = (p) => `<div class="mgrid">${[["t","Atas"],["r","Kanan"],["b","Bawah"],["l","Kiri"]].map(([s,l])=>fNum(p+"."+s,l,0,80,1)).join("")}</div>`;
+  return `
+  <fieldset><legend>Umum</legend>
+    ${fSel("st.font","Jenis tulisan",Object.entries(FONTS).map(([k,f])=>[k,f.n]))}
+    ${fRange("st.lh","Jarak baris",1,2,0.05,"")}
+    ${fChk("dec","Sentiasa papar 2 tempat perpuluhan (RM 7,950.00)")}
+    <label class="check"><input type="checkbox" id="guides" ${db.guides?"checked":""}> Tunjuk garis margin dalam pratonton</label>
+  </fieldset>
+  <fieldset><legend>Halaman 1 · Landskap</legend>
+    ${fRange("st.kL","Skala semua tulisan",50,150,2,"%")}
+    <span class="hint">Margin (mm)</span>${mg("st.mL")}
+    ${fRange("st.gapL","Jarak antara baris",0,20,0.5," mm")}
+    <div class="row">${fSel("st.alignL","Jajaran",[["center","Tengah"],["left","Kiri"],["right","Kanan"]])}${fSel("st.vL","Kedudukan",[["top","Atas"],["center","Tengah"]])}${fSel("st.alignSign","Tandatangan",[["center","Tengah"],["left","Kiri"],["right","Kanan"]])}</div>
+    <table class="ty"><thead><tr><th>Elemen</th><th>Saiz (pt)</th><th colspan="3">Gaya</th></tr></thead><tbody>${tyRows(EL_L)}</tbody></table>
+  </fieldset>
+  <fieldset><legend>Halaman 2 · Potret</legend>
+    ${fRange("st.kP","Skala semua tulisan",50,150,2,"%")}
+    <span class="hint">Margin (mm)</span>${mg("st.mP")}
+    ${fRange("st.gapTitle","Jarak selepas tajuk",0,25,0.5," mm")}
+    ${fRange("st.gapP","Jarak antara perkara",0,15,0.5," mm")}
+    ${fRange("st.gapJumlah","Jarak sebelum jumlah",0,40,1," mm")}
+    <div class="row">${fSel("st.alignTajuk","Jajaran tajuk",[["left","Kiri"],["center","Tengah"],["justify","Rata"]])}${fSel("st.numStyle","Nombor perkara",[["num","1."],["paren","1)"],["none","Tiada"]])}${fSel("st.subStyle","Tanda pecahan",[["alpha","a."],["roman","i."],["dash","–"],["dot","•"],["none","Tiada"]])}</div>
+    ${fChk("st.upper","Tajuk huruf besar semua")}
+    <table class="ty"><thead><tr><th>Elemen</th><th>Saiz (pt)</th><th colspan="3">Gaya</th></tr></thead><tbody>${tyRows(EL_P)}</tbody></table>
+  </fieldset>
+  <fieldset><legend>Label</legend>
+    <div class="row">${fText("label.pengeluaran","Pengeluaran")}${fText("label.jumlah","Jumlah")}</div>
+    <div class="row">${fText("label.belanja","Pembelanjaan")}${fText("label.baki","Baki")}</div>
+    ${fText("label.bakiLepas","Baki sebelum")}
+  </fieldset>
+  <fieldset><legend>Tetapan gaya</legend>
+    <div class="row">
+      <button type="button" class="btn" data-act="styleAll">Guna gaya ini untuk semua rekod</button>
+      <button type="button" class="btn del" data-act="styleReset">Set semula gaya asal</button>
+    </div>
+    <p class="hint">Rekod baru akan ikut gaya dan label rekod yang sedang dibuka.</p>
+  </fieldset>`;
+}
 
-/* ---------- Rekod ---------- */
-$("recSel").addEventListener("change", e=>{ db.cur = e.target.value; save(); fillForm(); });
-$("bNew").onclick = ()=>{ const n = blank(cur()); db.recs.unshift(n); db.cur = n.id; save(); fillForm(); $("f_nama").select(); toast("Rekod baru dibuat"); };
-$("bDup").onclick = ()=>{ const n = JSON.parse(JSON.stringify(cur())); n.id = uid(); n.nama = (n.nama||"") + " (salinan)"; db.recs.unshift(n); db.cur = n.id; save(); fillForm(); toast("Rekod disalin"); };
+function tabSimpan(){
+  return `<fieldset><legend>Sandaran</legend>
+    <p class="hint">Semua rekod disimpan automatik dalam pelayar ini. Simpan sandaran ke fail supaya tidak hilang, atau untuk pindah ke komputer lain.</p>
+    <div class="row"><button type="button" class="btn pri" data-act="export">Simpan sandaran (.json)</button>
+    <button type="button" class="btn" data-act="import">Buka sandaran</button></div>
+  </fieldset>`;
+}
+
+function drawForm(focusPath){
+  const tab = db.tab || "isi";
+  document.querySelectorAll(".tabs button").forEach(b=>b.setAttribute("aria-selected", b.dataset.tab===tab));
+  const f = $("form"), st = f.scrollTop;
+  f.innerHTML = ({isi:tabIsi, kira:tabKira, gaya:tabGaya, simpan:tabSimpan}[tab])();
+  f.scrollTop = st;
+  $("recSel").innerHTML = db.recs.map(x=>`<option value="${x.id}">${esc(x.nama||"(tanpa nama)")}</option>`).join("");
+  $("recSel").value = cur().id;
+  render();
+  if (focusPath){ const el = f.querySelector(`[data-k^="${focusPath}"]`); if (el){ el.focus(); el.scrollIntoView({block:"nearest"}); } }
+}
+
+/* Kemas kini paparan kiraan tanpa lukis semula borang */
+function refresh(){
+  const r = cur(), t = totals(r), f = $("form");
+  f.querySelectorAll("[data-ev]").forEach(o=>{
+    const x = val(o.dataset.ev), v = ev(x);
+    o.classList.toggle("bad", isNaN(v));
+    o.textContent = isNaN(v) ? "Formula tidak sah — guna nombor dan + − × ÷ ( ) % sahaja" : (isFormula(x) ? "= " + money(v,true) : "");
+  });
+  r.items.forEach((it,i)=>{ if (it.auto){ const el = $(idOf("items."+i+".amaun")); if (el) el.value = fmt(itemAmt(it), true); } });
+  const sum = `<span>Baki sebelum</span><b>${money(t.lepas,true)}</b>
+    <span>Pengeluaran (${r.amaun.filter(a=>String(a).trim()).map(a=>fmt(n(a))).join(" + ")||"0"})</span><b>${money(t.keluar,true)}</b>
+    <span class="tot">Jumlah dana</span><b class="tot">${money(t.dana,true)}</b>
+    <span>Jumlah perkara (halaman 2)</span><b>${money(t.jumlah,true)}</b>
+    <span>Pembelanjaan ${t.manual?"(manual)":"(auto)"}</span><b>− ${money(t.belanja,true)}</b>
+    <span class="tot">Baki dibawa kehadapan</span><b class="tot ${t.baki<0?"neg":""}">${money(t.baki,true)}</b>`;
+  f.querySelectorAll("[data-sum],[data-logic]").forEach(o=>o.innerHTML = sum);
+  const warns = [];
+  if (t.manual && r2(t.belanja - t.jumlah) !== 0) warns.push(`Pembelanjaan manual berbeza ${money(r2(t.belanja - t.jumlah),true)} daripada jumlah perkara.`);
+  if (t.baki < 0) warns.push("Baki negatif: pembelanjaan melebihi dana.");
+  r.items.forEach((it,i)=>{ if (!it.auto && it.sub.some(s=>String(s.a).trim())){ const ss = r2(it.sub.reduce((a,s)=>a+n(s.a),0)); if (ss !== itemAmt(it)) warns.push(`Perkara ${i+1}: jumlah pecahan ${money(ss,true)} tidak sama dengan amaun ${money(itemAmt(it),true)}.`); } });
+  f.querySelectorAll("[data-warn]").forEach(o=>{ o.hidden = !warns.length; o.innerHTML = warns.map(esc).join("<br>"); });
+  const kt = f.querySelector("[data-kalktot]"); if (kt) kt.textContent = money(r2(r.kalk.reduce((a,x)=>a+n(x.a),0)),true);
+}
+
+/* ================= Peristiwa ================= */
+$("form").addEventListener("input", e=>{
+  const el = e.target;
+  if (el.id === "guides"){ db.guides = el.checked; save(); render(); return; }
+  const p = el.dataset.k; if (!p) return;
+  const t = el.dataset.t;
+  const v = t==="b" ? el.checked : t==="b01" ? (el.checked?1:0) : t==="n" ? (el.value===""?0:+el.value) : el.value;
+  setP(cur(), p, v);
+  const sh = $("form").querySelector(`[data-show="${p}"]`); if (sh) sh.textContent = v + (el.dataset.unit||"");
+  save();
+  if (el.dataset.redraw) drawForm(); else render();
+});
+$("form").addEventListener("change", e=>{
+  if (e.target.id === "ambilBaki" && e.target.value){
+    const o = db.recs.find(x=>x.id===e.target.value); if (!o) return;
+    const r = cur(); r.bakiLepas = String(totals(o).baki); r.showBakiLepas = true; save(); drawForm(); toast("Baki diambil dari " + (o.nama||"rekod"));
+  }
+});
+const TPL = {amt:()=>"", item:newItem, sub:()=>({t:"",a:""}), kalk:()=>({k:"",a:""})};
+$("form").addEventListener("click", e=>{
+  const b = e.target.closest("button[data-act]"); if (!b) return;
+  const r = cur(), act = b.dataset.act, p = b.dataset.p, i = +b.dataset.i;
+  const arr = p ? getP(r,p) : null;
+  if (act === "add"){ arr.push(TPL[b.dataset.i]()); save(); drawForm(p+"."+(arr.length-1)); return; }
+  if (act === "del"){ arr.splice(i,1); if (!arr.length && p!=="items" && !p.endsWith(".sub")) arr.push(TPL[p==="kalk"?"kalk":"amt"]()); }
+  else if (act === "up" || act === "down"){ const j = act==="up"?i-1:i+1; [arr[i],arr[j]] = [arr[j],arr[i]]; }
+  else if (act === "kalkSend" || act === "kalkSub"){
+    const to = $("kalkTo").value, tot = r2(r.kalk.reduce((a,x)=>a+n(x.a),0)), rows = r.kalk.filter(x=>x.k.trim()||String(x.a).trim());
+    if (!rows.length){ toast("Kalkulator masih kosong"); return; }
+    let it = null;
+    if (to.startsWith("item:")) it = r.items[+to.slice(5)];
+    else if (to === "newitem"){ it = newItem(); r.items.push(it); }
+    if (act === "kalkSub"){
+      if (!it){ toast("Pilih perkara untuk menerima pecahan"); return; }
+      rows.forEach(x=>it.sub.push({t:x.k, a:String(r2(n(x.a)))})); it.auto = true; it.showSubAmt = true;
+      toast(`${rows.length} pecahan ditambah`);
+    } else {
+      const s = String(tot);
+      if (it){ it.auto = false; it.amaun = s; }
+      else if (to === "belanja") r.belanja = s;
+      else if (to === "amaun") r.amaun.push(s);
+      else if (to === "bakiLepas"){ r.bakiLepas = s; r.showBakiLepas = true; }
+      toast("Jumlah " + money(tot,true) + " dihantar");
+    }
+  }
+  else if (act === "kalkClear") r.kalk = [{k:"",a:""}];
+  else if (act === "styleAll"){ db.recs.forEach(x=>{ x.st = clone(r.st); x.label = clone(r.label); x.dec = r.dec; }); toast("Gaya digunakan untuk semua rekod"); }
+  else if (act === "styleReset"){ r.st = defStyle(); toast("Gaya asal dipulihkan"); }
+  else if (act === "export") return exportJson();
+  else if (act === "import") return $("fileIn").click();
+  save(); drawForm();
+});
+document.querySelector(".tabs").addEventListener("click", e=>{ const b = e.target.closest("[data-tab]"); if (!b) return; db.tab = b.dataset.tab; save(); $("form").scrollTop = 0; drawForm(); });
+
+/* ================= Rekod ================= */
+$("recSel").addEventListener("change", e=>{ db.cur = e.target.value; save(); drawForm(); });
+$("bNew").onclick = ()=>{ const c = cur(), x = defaults(); x.st = clone(c.st); x.label = clone(c.label); x.dec = c.dec; x.sign = c.sign;
+  x.bakiLepas = String(totals(c).baki); x.showBakiLepas = c.showBakiLepas;
+  db.recs.unshift(x); db.cur = x.id; db.tab = "isi"; save(); drawForm(); $(idOf("nama")).select(); toast("Rekod baru dibuat. Baki sebelum diambil dari rekod tadi."); };
+$("bDup").onclick = ()=>{ const x = clone(cur()); x.id = uid(); x.nama = (x.nama||"") + " (salinan)"; db.recs.unshift(x); db.cur = x.id; save(); drawForm(); toast("Rekod disalin"); };
 let delArm = 0;
 $("bDel").onclick = ()=>{
   if (Date.now() - delArm > 3000){ delArm = Date.now(); $("bDel").textContent = "Tekan lagi untuk padam"; setTimeout(()=>{ $("bDel").textContent="Padam"; }, 3000); return; }
   delArm = 0; $("bDel").textContent = "Padam";
-  db.recs = db.recs.filter(r=>r.id!==db.cur);
-  if (!db.recs.length) db.recs.push(blank());
-  db.cur = db.recs[0].id; save(); fillForm(); toast("Rekod dipadam");
+  db.recs = db.recs.filter(r=>r.id!==db.cur); if (!db.recs.length) db.recs.push(defaults());
+  db.cur = db.recs[0].id; save(); drawForm(); toast("Rekod dipadam");
 };
 
-/* ---------- Sandaran ---------- */
+/* ================= Sandaran ================= */
 function download(blob, name){
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name;
   document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
 }
 const safeName = s => (s||"borang").replace(/[^\w\- ]+/g,"").trim().replace(/\s+/g,"_").slice(0,60) || "borang";
 function exportJson(){
-  const d = new Date().toISOString().slice(0,10);
-  download(new Blob([JSON.stringify(db,null,2)],{type:"application/json"}), `sandaran_borang_audit_${d}.json`);
+  download(new Blob([JSON.stringify({recs:db.recs},null,2)],{type:"application/json"}), `sandaran_borang_audit_${new Date().toISOString().slice(0,10)}.json`);
   toast("Sandaran disimpan");
 }
 $("fileIn").onchange = async e=>{
   const f = e.target.files[0]; if (!f) return;
   try{
     const d = JSON.parse(await f.text());
-    const recs = Array.isArray(d.recs) ? d.recs : (d.items ? [d] : null);
-    if (!recs) throw 0;
-    const ids = new Set(db.recs.map(r=>r.id));
-    recs.forEach(r=>{ const base = sample(); const m = Object.assign(base, r, {label:Object.assign(base.label, r.label||{})}); if (ids.has(m.id)) db.recs = db.recs.filter(x=>x.id!==m.id); db.recs.push(m); });
-    db.cur = recs[0].id; save(); fillForm(); toast(`${recs.length} rekod dibuka`);
+    const recs = Array.isArray(d.recs) ? d.recs : (d.items ? [d] : null); if (!recs || !recs.length) throw 0;
+    recs.map(normalize).forEach(m=>{ db.recs = db.recs.filter(x=>x.id!==m.id); db.recs.push(m); });
+    db.cur = recs[0].id || db.recs[0].id; save(); drawForm(); toast(`${recs.length} rekod dibuka`);
   }catch(_){ toast("Fail ini bukan sandaran borang audit yang sah"); }
   e.target.value = "";
 };
 
-/* ---------- Cetak & PDF ---------- */
+/* ================= Cetak & PDF ================= */
 function setPrintPages(){ const v = $("pgSel").value; $("printRoot").className = v==="both" ? "" : "only-"+v; return v; }
 $("bPrint").onclick = ()=>{ setPrintPages(); window.print(); };
 $("bPdf").onclick = async ()=>{
@@ -435,7 +621,7 @@ $("bPdf").onclick = async ()=>{
     const { jsPDF } = window.jspdf; let pdf = null;
     for (const p of pages){
       const land = p.classList.contains("land"), o = land ? "landscape" : "portrait";
-      const c = await html2canvas(p, {scale: 2.5, backgroundColor:"#ffffff", useCORS:true, logging:false});
+      const c = await html2canvas(p, {scale:2.5, backgroundColor:"#ffffff", logging:false});
       if (!pdf) pdf = new jsPDF({orientation:o, unit:"mm", format:"a4"}); else pdf.addPage("a4", o);
       pdf.addImage(c.toDataURL("image/jpeg", .95), "JPEG", 0, 0, land?297:210, land?210:297);
     }
@@ -444,9 +630,9 @@ $("bPdf").onclick = async ()=>{
   btn.disabled = false; btn.textContent = "Muat turun PDF";
 };
 
-let tt; function toast(m){ const t=$("toast"); t.textContent=m; t.classList.add("on"); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove("on"),2200); }
+let tt; function toast(m){ const t=$("toast"); t.textContent=m; t.classList.add("on"); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove("on"),2600); }
 window.addEventListener("resize", fitPreview);
-fillForm();
+drawForm();
 })();
 </script>
 </body>
