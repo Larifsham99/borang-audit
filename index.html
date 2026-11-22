@@ -190,14 +190,14 @@ const FONTS = {
   cambria: {n:"Cambria", css:'Cambria,"Caladea",Georgia,serif'},
   tahoma:  {n:"Tahoma", css:'Tahoma,Verdana,sans-serif'}
 };
-const EL_L = [["year","Tahun"],["ke","Pengeluaran ke-"],["tarikh","Tarikh"],["amt","Amaun pengeluaran"],["bakiLepas","Baki sebelum"],["belanja","Pembelanjaan"],["baki","Baki dibawa kehadapan"],["extra","Baris tambahan"],["sign","Tandatangan"]];
-const EL_P = [["tajuk","Tajuk projek"],["item","Nama perkara"],["itemAmt","Amaun perkara"],["sub","Pecahan (a, b, c)"],["subAmt","Amaun pecahan"],["jumlah","Jumlah"],["nota","Catatan"]];
+const EL_L = [["year","Tahun"],["ke","Pengeluaran ke-"],["tarikh","Tarikh"],["amt","Amaun pengeluaran"],["bakiLepas","Baki sebelum"],["belanja","Pembelanjaan"],["baki","Baki dibawa kehadapan"],["extra","Baris tambahan"]];
+const EL_P = [["tajuk","Tajuk projek"],["item","Nama perkara"],["itemAmt","Amaun perkara"],["sub","Pecahan (a, b, c)"],["subAmt","Amaun pecahan"],["jumlah","Jumlah"],["nota","Catatan"],["sign","Tandatangan"]];
 function defStyle(){
   return {
     font:"calibri", lh:1.25, kL:100, kP:100,
     mL:{t:16,r:20,b:14,l:20}, mP:{t:22,r:18,b:18,l:22},
     gapL:5, gapP:2.5, gapTitle:4, gapJumlah:9,
-    alignL:"center", vL:"top", alignSign:"center", alignTajuk:"left", upper:true,
+    alignL:"center", vL:"top", alignSign:"center", signPos:"bottom", alignTajuk:"left", upper:true,
     numStyle:"num", subStyle:"alpha",
     el:{
       year:{s:44,b:1,i:0,u:0}, ke:{s:34,b:1,i:0,u:0}, tarikh:{s:34,b:1,i:0,u:0}, amt:{s:40,b:1,i:0,u:0},
@@ -212,7 +212,7 @@ function defaults(){
   return {
     id: uid(), nama:"Pengeluaran baru", tahun:String(new Date().getFullYear()), ke:"", tarikh:"",
     amaun:[""], bakiLepas:"", showBakiLepas:false, belanja:"", showBelanja:true, showBaki:true,
-    sign:"", showSign:true, extraL:"",
+    sign:"", showSign:true, signOn:"p2", extraL:"",
     tajuk:"", items:[newItem()], nota:"",
     label:{pengeluaran:"PENGELUARAN KE-", belanja:"PEMBELANJAAN", baki:"BAKI DIBAWA KEHADAPAN", jumlah:"JUMLAH", bakiLepas:"BAKI SEBELUM"},
     dec:false, kalk:[{k:"",a:""}], st:defStyle()
@@ -250,6 +250,7 @@ function normalize(r){
     x.sub = (x.sub||[]).map(s => typeof s === "string" ? {t:s,a:""} : {t:s.t||"", a:String(s.a??"")});
     return x;
   });
+  if (!r || !r.signOn) m.signOn = "p2";
   if (!Array.isArray(m.kalk) || !m.kalk.length) m.kalk = [{k:"",a:""}];
   return m;
 }
@@ -309,8 +310,12 @@ function pageLand(r){
       ${r.showBaki ? `<div style="${ts("baki")}">${esc(L.baki)} = ${money(t.baki, r.dec)}</div>` : ""}
       ${extra}
     </div>
-    ${r.showSign ? `<div class="lsign" style="${ts("sign")};text-align:${S.alignSign}"><div class="dots">..............................</div>${r.sign.trim()?`(${esc(r.sign)})`:""}</div>` : ""}
+    ${(r.signOn==="p1"||r.signOn==="both") ? signHtml(r, k, true) : ""}
   </div></div>`;
+}
+function signHtml(r, k, bottom){
+  const S = r.st;
+  return `<div class="lsign" style="${tstyle(S.el.sign, k)};text-align:${S.alignSign};${bottom?"":"margin-top:12mm"}"><div class="dots">..............................</div>${r.sign.trim()?`(${esc(r.sign)})`:""}</div>`;
 }
 function pagePort(r){
   const S = r.st, E = S.el, k = S.kP/100, t = totals(r), m = S.mP;
@@ -329,6 +334,7 @@ function pagePort(r){
     <div class="pitems" style="gap:${S.gapP}mm">${items}</div>
     <div style="${ts("jumlah")};margin-top:${S.gapJumlah}mm">${esc(r.label.jumlah)} ${money(t.jumlah, r.dec)}</div>
     ${r.nota ? `<div class="pnote" style="${ts("nota")};margin-top:6mm">${esc(r.nota)}</div>` : ""}
+    ${(r.signOn==="p2"||r.signOn==="both") ? signHtml(r, k, S.signPos==="bottom") : ""}
   </div></div>`;
 }
 
@@ -397,7 +403,7 @@ function tabIsi(){
     ${fChk("showBelanja","Papar baris pembelanjaan dalam dokumen")}
     ${fChk("showBaki","Papar baris baki dibawa kehadapan dalam dokumen")}
     ${fText("sign","Nama penandatangan")}
-    ${fChk("showSign","Papar ruang tandatangan")}
+    ${fSel("signOn","Letak tandatangan di",[["p2","Halaman 2 (potret)"],["p1","Halaman 1 (landskap)"],["both","Kedua-dua halaman"],["none","Tiada"]])}
     ${fArea("extraL","Baris tambahan (satu baris satu, pilihan)",2,"cth. DISEMAK OLEH: ...")}
   </fieldset>
   <fieldset><legend>Halaman 2 · Potret (perincian)</legend>
@@ -451,7 +457,7 @@ function tabGaya(){
     ${fRange("st.kL","Skala semua tulisan",50,150,2,"%")}
     <span class="hint">Margin (mm)</span>${mg("st.mL")}
     ${fRange("st.gapL","Jarak antara baris",0,20,0.5," mm")}
-    <div class="row">${fSel("st.alignL","Jajaran",[["center","Tengah"],["left","Kiri"],["right","Kanan"]])}${fSel("st.vL","Kedudukan",[["top","Atas"],["center","Tengah"]])}${fSel("st.alignSign","Tandatangan",[["center","Tengah"],["left","Kiri"],["right","Kanan"]])}</div>
+    <div class="row">${fSel("st.alignL","Jajaran",[["center","Tengah"],["left","Kiri"],["right","Kanan"]])}${fSel("st.vL","Kedudukan",[["top","Atas"],["center","Tengah"]])}</div>
     <table class="ty"><thead><tr><th>Elemen</th><th>Saiz (pt)</th><th colspan="3">Gaya</th></tr></thead><tbody>${tyRows(EL_L)}</tbody></table>
   </fieldset>
   <fieldset><legend>Halaman 2 · Potret</legend>
@@ -462,6 +468,7 @@ function tabGaya(){
     ${fRange("st.gapJumlah","Jarak sebelum jumlah",0,40,1," mm")}
     <div class="row">${fSel("st.alignTajuk","Jajaran tajuk",[["left","Kiri"],["center","Tengah"],["justify","Rata"]])}${fSel("st.numStyle","Nombor perkara",[["num","1."],["paren","1)"],["none","Tiada"]])}${fSel("st.subStyle","Tanda pecahan",[["alpha","a."],["roman","i."],["dash","–"],["dot","•"],["none","Tiada"]])}</div>
     ${fChk("st.upper","Tajuk huruf besar semua")}
+    <div class="row">${fSel("st.alignSign","Jajaran tandatangan",[["center","Tengah"],["left","Kiri"],["right","Kanan"]])}${fSel("st.signPos","Kedudukan tandatangan (potret)",[["bottom","Bawah halaman"],["after","Selepas jumlah"]])}</div>
     <table class="ty"><thead><tr><th>Elemen</th><th>Saiz (pt)</th><th colspan="3">Gaya</th></tr></thead><tbody>${tyRows(EL_P)}</tbody></table>
   </fieldset>
   <fieldset><legend>Label</legend>

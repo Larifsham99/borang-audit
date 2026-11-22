@@ -16,4 +16,5 @@ Buka `index.html` dalam Chrome / Edge. Panel kiri ada 4 tab:
 | **Simpanan** | Simpan/buka sandaran `.json`. |
 
 **Cetak** menetapkan orientasi setiap halaman secara automatik. **Muat turun PDF** menjana PDF terus (perlu internet kali pertama).
+Tandatangan diletak di halaman 2 secara asal; boleh tukar ke halaman 1, kedua-dua, atau tiada (tab Isi borang).
 **+ Baru** mewarisi gaya rekod semasa dan mengambil bakinya sebagai *baki sebelum*.
