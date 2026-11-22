@@ -89,6 +89,7 @@ input[type=range]{width:100%}
 .tg:has(input:checked){background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
 .tg:has(input:focus-visible){outline:2px solid var(--accent)}
 .mgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.fit{text-transform:none;letter-spacing:0}
 .ovf{color:var(--danger);text-transform:none;letter-spacing:0;font-weight:600;margin-left:8px}
 .ovf .btn{margin-left:6px;color:var(--fg)}
 .toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--fg);color:var(--bg);
@@ -102,8 +103,8 @@ input[type=range]{width:100%}
 
 /* ---------- Halaman dokumen (sentiasa putih) ---------- */
 .page{background:#fff;color:#000;overflow:hidden;position:relative}
-.page.land{width:297mm;height:210mm}
-.page.port{width:210mm;height:297mm}
+.page.land{width:297mm;height:209.5mm}
+.page.port{width:210mm;height:296.5mm}
 .land-in,.port-in{position:absolute;inset:0;display:flex;flex-direction:column}
 .lmain{display:flex;flex-direction:column;width:100%}
 .lsign{margin-top:auto;padding-top:6mm}
@@ -122,6 +123,7 @@ input[type=range]{width:100%}
 .iright .lead{border-bottom:.09em dotted currentColor;min-width:1em;transform:translateY(-.25em)}
 
 #printRoot{position:fixed;left:-10000px;top:0}
+@page{size:A4;margin:0}
 @page land{size:A4 landscape;margin:0}
 @page port{size:A4 portrait;margin:0}
 @media print{
@@ -167,9 +169,9 @@ input[type=range]{width:100%}
   </aside>
 
   <section class="preview" id="preview" aria-label="Pratonton">
-    <div class="cap">Halaman 1 · A4 landskap <span class="ovf" id="ovfL" hidden>Kandungan melebihi halaman <button type="button" class="btn sm" data-fit="L">Muatkan automatik</button></span></div>
+    <div class="cap">Halaman 1 · A4 landskap <span class="fit" id="fitL"></span> <span class="ovf" id="ovfL" hidden>Kandungan melebihi halaman <button type="button" class="btn sm" data-fit="L">Muatkan automatik</button></span></div>
     <div class="sheet-wrap" id="wrapL"></div>
-    <div class="cap">Halaman 2 · A4 potret <span class="ovf" id="ovfP" hidden>Kandungan melebihi halaman <button type="button" class="btn sm" data-fit="P">Muatkan automatik</button></span></div>
+    <div class="cap">Halaman 2 · A4 potret <span class="fit" id="fitP"></span> <span class="ovf" id="ovfP" hidden>Kandungan melebihi halaman <button type="button" class="btn sm" data-fit="P">Muatkan automatik</button></span></div>
     <div class="sheet-wrap" id="wrapP"></div>
   </section>
 </div>
@@ -205,7 +207,7 @@ function defStyle(){
     mL:{t:16,r:20,b:14,l:20}, mP:{t:22,r:18,b:18,l:22},
     gapL:5, gapP:2.5, gapTitle:4, gapJumlah:9,
     alignL:"center", vL:"top", alignSign:"center", signPos:"bottom", alignTajuk:"left", upper:true,
-    numStyle:"num", subStyle:"alpha", amtLayout:"below", amtDec2:true, amtLeader:true,
+    numStyle:"num", subStyle:"alpha", amtLayout:"below", amtDec2:true, amtLeader:true, autoFit:true,
     el:{
       year:{s:44,b:1,i:0,u:0}, ke:{s:34,b:1,i:0,u:0}, tarikh:{s:34,b:1,i:0,u:0}, amt:{s:40,b:1,i:0,u:0},
       bakiLepas:{s:25,b:0,i:0,u:0}, belanja:{s:25,b:0,i:0,u:0}, baki:{s:25,b:0,i:0,u:0}, tunai:{s:25,b:1,i:0,u:0}, tunaiNote:{s:13,b:0,i:1,u:0}, extra:{s:18,b:0,i:0,u:0}, sign:{s:15,b:0,i:0,u:0},
@@ -308,8 +310,8 @@ function totals(r){
 function tstyle(e, k){ return `font-size:${(e.s*k).toFixed(2)}pt;font-weight:${e.b?700:400};font-style:${e.i?"italic":"normal"};text-decoration:${e.u?"underline":"none"}`; }
 function roman(i){ return ["i","ii","iii","iv","v","vi","vii","viii","ix","x","xi","xii","xiii","xiv","xv","xvi","xvii","xviii","xix","xx"][i] || String(i+1); }
 function subMark(st, j){ return {alpha:"abcdefghijklmnopqrstuvwxyz"[j%26]+".", roman:roman(j)+".", dash:"–", dot:"•", none:""}[st] ?? ""; }
-function pageLand(r){
-  const S = r.st, E = S.el, k = S.kL/100, t = totals(r), L = r.label, m = S.mL;
+function pageLand(r, kk){
+  const S = r.st, E = S.el, k = (kk ?? S.kL)/100, t = totals(r), L = r.label, m = S.mL;
   const ts = key => tstyle(E[key], k);
   const amts = r.amaun.filter(a=>String(a).trim()!=="").map((a,i)=> (i===0?"RM ":"") + fmt(n(a), r.dec)).join(" + ") || "RM 0";
   const extra = String(r.extraL||"").split("\n").filter(l=>l.trim()).map(l=>`<div style="${ts("extra")}">${esc(l)}</div>`).join("");
@@ -343,8 +345,8 @@ function signHtml(r, k, bottom){
   const date = r.signDateOn ? `<div style="${r.signDatePos==="above"?"margin-bottom:.6em":"margin-top:.3em"}">${dl?esc(dl)+" : ":""}${esc(dv)}</div>` : "";
   return `<div class="lsign" style="${tstyle(S.el.sign, k)};text-align:${S.alignSign};${bottom?"":"margin-top:12mm"}">${top}${r.signDatePos==="above"?date:""}${r.signDots?`<div class="dots">..............................</div>`:""}${body}${extra}${r.signDatePos!=="above"?date:""}</div>`;
 }
-function pagePort(r){
-  const S = r.st, E = S.el, k = S.kP/100, t = totals(r), m = S.mP;
+function pagePort(r, kk){
+  const S = r.st, E = S.el, k = (kk ?? S.kP)/100, t = totals(r), m = S.mP;
   const ts = key => tstyle(E[key], k);
   const lay = S.amtLayout || "below", d2 = r.dec || (lay !== "inline" && S.amtDec2);
   const numW = Math.max(4, ...r.items.map(it => fmt(Math.abs(itemAmt(it)), d2).length + (itemAmt(it) < 0 ? 2 : 0))) + 0.6;
@@ -382,8 +384,18 @@ function fitPreview(){
 }
 function render(){
   const r = cur();
-  $("wrapL").innerHTML = pageLand(r); $("wrapP").innerHTML = pagePort(r);
-  $("printRoot").innerHTML = pageLand(r) + pagePort(r);
+  // Muat automatik: kecilkan skala sementara sehingga semua kandungan (termasuk tandatangan) muat dalam kertas
+  let kL = r.st.kL, kP = r.st.kP;
+  $("printRoot").innerHTML = pageLand(r, kL) + pagePort(r, kP);
+  if (r.st.autoFit){
+    let o = overflows();
+    while ((o.L && kL > 40) || (o.P && kP > 40)){
+      if (o.L) kL -= 1; if (o.P) kP -= 1;
+      $("printRoot").innerHTML = pageLand(r, kL) + pagePort(r, kP); o = overflows();
+    }
+  }
+  fitInfo = {L: kL !== r.st.kL ? kL : 0, P: kP !== r.st.kP ? kP : 0};
+  $("wrapL").innerHTML = pageLand(r, kL); $("wrapP").innerHTML = pagePort(r, kP);
   $("wrapL").classList.toggle("guides", !!db.guides); $("wrapP").classList.toggle("guides", !!db.guides);
   fitPreview(); refresh(); checkOverflow();
   const opt = $("recSel").querySelector(`option[value="${r.id}"]`); if (opt) opt.textContent = r.nama || "(tanpa nama)";
@@ -394,7 +406,12 @@ function overflows(){
   const o = el => el && el.scrollHeight > el.clientHeight + 1;
   return {L:o(l), P:o(p)};
 }
-function checkOverflow(){ const o = overflows(); $("ovfL").hidden = !o.L; $("ovfP").hidden = !o.P; }
+let fitInfo = {L:0, P:0};
+function checkOverflow(){
+  const o = overflows(); $("ovfL").hidden = !o.L; $("ovfP").hidden = !o.P;
+  $("fitL").textContent = fitInfo.L ? `· dimuatkan automatik ke ${fitInfo.L}%` : "";
+  $("fitP").textContent = fitInfo.P ? `· dimuatkan automatik ke ${fitInfo.P}%` : "";
+}
 $("preview").addEventListener("click", e=>{
   const b = e.target.closest("[data-fit]"); if (!b) return;
   const side = b.dataset.fit, r = cur(), key = "k"+side;
@@ -515,6 +532,7 @@ function tabGaya(){
     ${fSel("st.font","Jenis tulisan",Object.entries(FONTS).map(([k,f])=>[k,f.n]))}
     ${fRange("st.lh","Jarak baris",1,2,0.05,"")}
     ${fChk("dec","Sentiasa papar 2 tempat perpuluhan (RM 7,950.00)")}
+    ${fChk("st.autoFit","Muatkan automatik: kecilkan tulisan jika kandungan melebihi kertas")}
     <label class="check"><input type="checkbox" id="guides" ${db.guides?"checked":""}> Tunjuk garis margin dalam pratonton</label>
   </fieldset>
   <fieldset><legend>Halaman 1 · Landskap</legend>
