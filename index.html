@@ -220,7 +220,7 @@ const newItem = () => ({nama:"", amaun:"", auto:false, showSubAmt:false, sub:[]}
 function defaults(){
   return {
     id: uid(), nama:"Pengeluaran baru", tahun:String(new Date().getFullYear()), ke:"", tarikh:"",
-    amaun:[""], bakiLepas:"", showBakiLepas:false, belanja:"", showBelanja:true, showBaki:true,
+    amaun:[""], bakiLepas:"", bakiLink:"", showBakiLepas:false, belanja:"", showBelanja:true, showBaki:true,
     tunaiMode:"auto", tunaiManual:"", tunaiNote:"* Lebihan pembelanjaan dibayar secara tunai.", showTunaiP1:true, showTunaiP2:true,
     sign:"Ustaz Md Mukhtar Bin Tuan Guru Haji Omar Zuhdi", signJawatan:"Mudir", signLayout:"inline", signBracket:false, signDots:true, signTop:"", signExtra:"", signDateOn:true, signDateLabel:"Tarikh disahkan", signDate:"", signDatePos:"below",
     saksiOn:false, saksi:[], p1Head:true, p1HeadTpl:"{pengeluaran} {ke}", p2Head:true, p2HeadTpl:"PEMBELANJAAN {pengeluaran} {ke} ({tahun})",
@@ -270,7 +270,7 @@ function normalize(r){
 }
 
 /* ================= Simpanan ================= */
-let db = {recs:[], cur:null, tab:"isi", guides:false};
+let db = {recs:[], cur:null, tab:"isi", guides:false, linkNew:true};
 try { const raw = localStorage.getItem(KEY); if (raw) db = Object.assign(db, JSON.parse(raw)); } catch(e){}
 db.recs = (Array.isArray(db.recs) ? db.recs : []).map(normalize);
 if (!db.recs.length){ const s = normalize(sample()); db.recs = [s]; db.cur = s.id; }
@@ -294,9 +294,13 @@ const r2 = v => Math.round(v*100)/100;
 function fmt(v, dec){ v = r2(v); const f = !Number.isInteger(v) || dec; return v.toLocaleString("en-US",{minimumFractionDigits:f?2:0, maximumFractionDigits:2}); }
 const money = (v, dec) => (v < 0 ? "- " : "") + "RM " + fmt(Math.abs(v), dec);
 const itemAmt = it => it.auto ? r2(it.sub.reduce((a,s)=>a+n(s.a),0)) : r2(n(it.amaun));
-function totals(r){
+function linksTo(o, id, seen = new Set()){ while (o && o.bakiLink && !seen.has(o.id)){ if (o.bakiLink === id) return true; seen.add(o.id); o = db.recs.find(x=>x.id===o.bakiLink); } return false; }
+const linked = r => r.bakiLink ? db.recs.find(x=>x.id===r.bakiLink && x.id!==r.id) : null;
+function totals(r, seen){
+  seen = seen || new Set([r.id]);
   const keluar = r2(r.amaun.reduce((a,b)=>a+n(b),0));
-  const lepas = r2(n(r.bakiLepas));
+  const L = linked(r);
+  const lepas = (L && !seen.has(L.id)) ? totals(L, new Set([...seen, L.id])).bakiShow : r2(n(r.bakiLepas));
   const dana = r2(keluar + lepas);
   const jumlah = r2(r.items.reduce((a,it)=>a+itemAmt(it),0));
   const manual = String(r.belanja).trim() !== "";
@@ -484,8 +488,16 @@ function tabIsi(){
     ${fText("tarikh","Tarikh","(13/10) DAN (22/10) 2025")}
     <div style="display:flex;flex-direction:column;gap:6px"><span class="hint" style="text-transform:uppercase;letter-spacing:.05em">Amaun pengeluaran (RM)</span>${amts}
       <div>${bt("add","amaun","amt","+ Tambah amaun")}</div></div>
-    <label><span>Baki sebelum (dibawa dari pengeluaran lepas)</span>${fExpr("bakiLepas","0")}</label>${evOut("bakiLepas")}
-    ${others.length ? `<label><span>Ambil baki dari rekod lain</span><select id="ambilBaki"><option value="">— pilih rekod —</option>${others.map(o=>`<option value="${o.id}">${esc(o.nama)} (baki ${money(totals(o).baki,true)})</option>`).join("")}</select></label>` : ""}
+    <div style="display:flex;flex-direction:column;gap:8px;border:1px dashed var(--line);border-radius:6px;padding:10px">
+      <span class="hint" style="font-weight:600">Baki sebelum (dibawa dari pengeluaran lepas)</span>
+      <label><span>Sumber baki sebelum</span><select id="bakiLinkSel">
+        <option value="">Tidak terikat (taip sendiri)</option>
+        ${others.map(o=>`<option value="${o.id}" ${r.bakiLink===o.id?"selected":""} ${linksTo(o, r.id)?"disabled":""}>Terikat: ${esc(o.nama||"(tanpa nama)")} (baki ${money(totals(o).bakiShow,true)})</option>`).join("")}
+      </select></label>
+      ${linked(r) ? `<p class="hint">Baki sebelum = baki rekod <b>${esc(linked(r).nama)}</b>, dan ikut berubah secara automatik bila rekod itu diubah.</p>` : ""}
+      <label><span>Amaun baki sebelum${linked(r)?" (automatik)":""}</span>${fExpr("bakiLepas","0", !!linked(r))}</label>${evOut("bakiLepas")}
+      <label class="check"><input type="checkbox" id="linkNew" ${db.linkNew?"checked":""}> Rekod baru (+ Baru) terus terikat dengan baki rekod sebelumnya</label>
+    </div>
     ${fChk("showBakiLepas","Papar baris baki sebelum dalam dokumen")}
     <label><span>Pembelanjaan (kosong = ikut jumlah halaman 2)</span>${fExpr("belanja","auto")}</label>${evOut("belanja")}
     <div class="calc" data-sum></div><p class="warn" data-warn hidden></p>
@@ -643,6 +655,7 @@ function refresh(){
     o.classList.toggle("bad", isNaN(v));
     o.textContent = isNaN(v) ? "Formula tidak sah — guna nombor dan + − × ÷ ( ) % sahaja" : (isFormula(x) ? "= " + money(v,true) : "");
   });
+  if (linked(r)){ const el = $(idOf("bakiLepas")); if (el) el.value = fmt(t.lepas, true); }
   r.items.forEach((it,i)=>{ if (it.auto){ const el = $(idOf("items."+i+".amaun")); if (el) el.value = fmt(itemAmt(it), true); } });
   const sum = `<span>Baki sebelum</span><b>${money(t.lepas,true)}</b>
     <span>Pengeluaran (${r.amaun.filter(a=>String(a).trim()).map(a=>fmt(n(a))).join(" + ")||"0"})</span><b>${money(t.keluar,true)}</b>
@@ -667,6 +680,7 @@ function refresh(){
 /* ================= Peristiwa ================= */
 $("form").addEventListener("input", e=>{
   const el = e.target;
+  if (el.id === "linkNew"){ db.linkNew = el.checked; save(); return; }
   if (el.id === "guides"){ db.guides = el.checked; save(); render(); return; }
   const p = el.dataset.k; if (!p) return;
   const t = el.dataset.t;
@@ -677,9 +691,11 @@ $("form").addEventListener("input", e=>{
   if (el.dataset.redraw) drawForm(); else render();
 });
 $("form").addEventListener("change", e=>{
-  if (e.target.id === "ambilBaki" && e.target.value){
-    const o = db.recs.find(x=>x.id===e.target.value); if (!o) return;
-    const r = cur(); r.bakiLepas = String(totals(o).baki); r.showBakiLepas = true; save(); drawForm(); toast("Baki diambil dari " + (o.nama||"rekod"));
+  if (e.target.id === "bakiLinkSel"){
+    const r = cur(), v = e.target.value;
+    if (!v){ r.bakiLepas = String(totals(r).lepas); r.bakiLink = ""; toast("Baki sebelum tidak lagi terikat. Nilai terakhir disimpan."); }
+    else { r.bakiLink = v; r.showBakiLepas = true; toast("Baki sebelum kini terikat dengan " + (linked(r)?.nama || "rekod")); }
+    save(); drawForm();
   }
 });
 const TPL = {saksi:()=>({on:true, top:"Saksi,", jawatan:"", nama:"", extra:"", dateOn:true, dateLabel:"Tarikh", tarikh:""}), amt:()=>"", item:newItem, sub:()=>({t:"",a:""}), kalk:()=>({k:"",a:""})};
@@ -725,8 +741,8 @@ document.querySelector(".tabs").addEventListener("click", e=>{ const b = e.targe
 $("recSel").addEventListener("change", e=>{ db.cur = e.target.value; save(); drawForm(); });
 $("bNew").onclick = ()=>{ const c = cur(), x = defaults(); x.st = clone(c.st); x.label = clone(c.label); x.dec = c.dec; ["sign","signJawatan","signLayout","signBracket","signDots","signTop","signExtra","signOn","signDateOn","signDateLabel","signDatePos","saksiOn","p1Head","p1HeadTpl","p2Head","p2HeadTpl"].forEach(f=>x[f]=c[f]); x.tahun = c.tahun || x.tahun;
   const nums = String(c.ke||"").match(/\d+/g); if (nums) x.ke = String(Math.max(...nums.map(Number)) + 1); x.saksi = c.saksi.map(z=>({...z, tarikh:""}));
-  x.bakiLepas = String(totals(c).baki); x.showBakiLepas = c.showBakiLepas;
-  db.recs.unshift(x); db.cur = x.id; db.tab = "isi"; save(); drawForm(); $(idOf("nama")).select(); toast(`Rekod baru: pengeluaran ke-${x.ke || "?"}, baki sebelum diambil dari rekod tadi.`); };
+  x.bakiLepas = String(totals(c).bakiShow); x.showBakiLepas = c.showBakiLepas; x.bakiLink = db.linkNew ? c.id : "";
+  db.recs.unshift(x); db.cur = x.id; db.tab = "isi"; save(); drawForm(); $(idOf("nama")).select(); toast(`Rekod baru: pengeluaran ke-${x.ke || "?"}, baki sebelum ${db.linkNew ? "terikat dengan" : "disalin dari"} rekod tadi.`); };
 $("bDup").onclick = ()=>{ const x = clone(cur()); x.id = uid(); x.nama = (x.nama||"") + " (salinan)"; db.recs.unshift(x); db.cur = x.id; save(); drawForm(); toast("Rekod disalin"); };
 let delArm = 0;
 $("bDel").onclick = ()=>{
