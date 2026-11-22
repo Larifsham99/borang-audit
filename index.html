@@ -223,7 +223,7 @@ function defaults(){
     amaun:[""], bakiLepas:"", showBakiLepas:false, belanja:"", showBelanja:true, showBaki:true,
     tunaiMode:"auto", tunaiManual:"", tunaiNote:"* Lebihan pembelanjaan dibayar secara tunai.", showTunaiP1:true, showTunaiP2:true,
     sign:"Ustaz Md Mukhtar Bin Tuan Guru Haji Omar Zuhdi", signJawatan:"Mudir", signLayout:"inline", signBracket:false, signDots:true, signTop:"", signExtra:"", signDateOn:true, signDateLabel:"Tarikh disahkan", signDate:"", signDatePos:"below",
-    saksiOn:false, saksi:[], p2Head:true, p2HeadTpl:"PEMBELANJAAN {pengeluaran} {ke} ({tahun})",
+    saksiOn:false, saksi:[], p1Head:true, p1HeadTpl:"{pengeluaran} {ke}", p2Head:true, p2HeadTpl:"PEMBELANJAAN {pengeluaran} {ke} ({tahun})",
     showSign:true, signOn:"p2", extraL:"",
     tajuk:"", items:[newItem()], nota:"",
     label:{pengeluaran:"PENGELUARAN KE-", belanja:"PEMBELANJAAN", baki:"BAKI DIBAWA KEHADAPAN", jumlah:"JUMLAH", bakiLepas:"BAKI SEBELUM", tunai:"TUNAI"},
@@ -320,7 +320,7 @@ function pageLand(r, kk){
   return `<div class="page land" style="font-family:${FONTS[S.font].css};line-height:${S.lh}"><div class="land-in" style="padding:${m.t}mm ${m.r}mm ${m.b}mm ${m.l}mm">
     <div class="lmain" style="gap:${S.gapL}mm;text-align:${S.alignL};${S.vL==="center"?"margin-block:auto":""}">
       ${r.tahun ? `<div style="${ts("year")}">(${esc(r.tahun)})</div>` : ""}
-      <div style="${ts("ke")}">${esc(L.pengeluaran)} ${esc(r.ke)}</div>
+      ${r.p1Head && headText(r, r.p1HeadTpl) ? `<div style="${ts("ke")}">${esc(headText(r, r.p1HeadTpl))}</div>` : ""}
       ${r.tarikh ? `<div style="${ts("tarikh")}">${esc(r.tarikh)}</div>` : ""}
       <div style="${ts("amt")}">= ${amts}</div>
       ${r.showBakiLepas ? `<div style="${ts("bakiLepas")}">${esc(L.bakiLepas)} = ${money(t.lepas, r.dec)}</div>` : ""}
@@ -332,9 +332,9 @@ function pageLand(r, kk){
     ${(r.signOn==="p1"||r.signOn==="both") ? signHtml(r, k, true) : ""}
   </div></div>`;
 }
-function headText(r){
+function headText(r, tpl){
   const map = {pengeluaran:r.label.pengeluaran, ke:r.ke, tahun:r.tahun, tarikh:r.tarikh, nama:r.nama};
-  return String(r.p2HeadTpl||"").replace(/\{(\w+)\}/gi, (m,k)=> map[k.toLowerCase()] ?? m)
+  return String(tpl ?? r.p2HeadTpl ?? "").replace(/\{(\w+)\}/gi, (m,k)=> map[k.toLowerCase()] ?? m)
     .replace(/\(\s*\)/g,"").replace(/\s{2,}/g," ").trim();
 }
 function signBlock(r, b){
@@ -477,6 +477,10 @@ function tabIsi(){
   <fieldset><legend>Halaman 1 · Landskap (ringkasan)</legend>
     ${fText("nama","Nama rekod (untuk senarai sahaja)")}
     <div class="row">${fText("tahun","Tahun")}${fText("ke","Pengeluaran ke-","17 DAN 18")}</div>
+    ${fChk("p1Head","Tajuk automatik (baris pengeluaran)",true)}
+    ${cur().p1Head ? `${fText("p1HeadTpl","Ayat tajuk halaman 1","{pengeluaran} {ke}")}
+      <p class="hint">Kod: <code>{pengeluaran}</code> <code>{ke}</code> <code>{tahun}</code> <code>{tarikh}</code>. Hasil: <b data-head1prev></b>
+      <button type="button" class="btn sm" data-act="head1Reset">Set semula</button></p>` : ""}
     ${fText("tarikh","Tarikh","(13/10) DAN (22/10) 2025")}
     <div style="display:flex;flex-direction:column;gap:6px"><span class="hint" style="text-transform:uppercase;letter-spacing:.05em">Amaun pengeluaran (RM)</span>${amts}
       <div>${bt("add","amaun","amt","+ Tambah amaun")}</div></div>
@@ -655,6 +659,7 @@ function refresh(){
   if (t.tunaiManual && t.baki < 0 && r2(t.tunai + t.baki) !== 0) warns.push(`Tunai manual berbeza dengan lebihan belanja ${money(-t.baki,true)}.`);
   r.items.forEach((it,i)=>{ if (!it.auto && it.sub.some(s=>String(s.a).trim())){ const ss = r2(it.sub.reduce((a,s)=>a+n(s.a),0)); if (ss !== itemAmt(it)) warns.push(`Perkara ${i+1}: jumlah pecahan ${money(ss,true)} tidak sama dengan amaun ${money(itemAmt(it),true)}.`); } });
   f.querySelectorAll("[data-warn]").forEach(o=>{ o.hidden = !warns.length; o.innerHTML = warns.map(esc).join("<br>"); });
+  f.querySelectorAll("[data-head1prev]").forEach(o=>o.textContent = headText(r, r.p1HeadTpl) || "(kosong)");
   f.querySelectorAll("[data-headprev]").forEach(o=>o.textContent = headText(r) || "(kosong)");
   const kt = f.querySelector("[data-kalktot]"); if (kt) kt.textContent = money(r2(r.kalk.reduce((a,x)=>a+n(x.a),0)),true);
 }
@@ -704,6 +709,7 @@ $("form").addEventListener("click", e=>{
       toast("Jumlah " + money(tot,true) + " dihantar");
     }
   }
+  else if (act === "head1Reset") r.p1HeadTpl = "{pengeluaran} {ke}";
   else if (act === "headReset") r.p2HeadTpl = "PEMBELANJAAN {pengeluaran} {ke} ({tahun})";
   else if (act === "today"){ const d = new Date(); r.signDate = `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`; }
   else if (act === "kalkClear") r.kalk = [{k:"",a:""}];
@@ -717,9 +723,10 @@ document.querySelector(".tabs").addEventListener("click", e=>{ const b = e.targe
 
 /* ================= Rekod ================= */
 $("recSel").addEventListener("change", e=>{ db.cur = e.target.value; save(); drawForm(); });
-$("bNew").onclick = ()=>{ const c = cur(), x = defaults(); x.st = clone(c.st); x.label = clone(c.label); x.dec = c.dec; ["sign","signJawatan","signLayout","signBracket","signDots","signTop","signExtra","signOn","signDateOn","signDateLabel","signDatePos","saksiOn"].forEach(f=>x[f]=c[f]); x.saksi = c.saksi.map(z=>({...z, tarikh:""}));
+$("bNew").onclick = ()=>{ const c = cur(), x = defaults(); x.st = clone(c.st); x.label = clone(c.label); x.dec = c.dec; ["sign","signJawatan","signLayout","signBracket","signDots","signTop","signExtra","signOn","signDateOn","signDateLabel","signDatePos","saksiOn","p1Head","p1HeadTpl","p2Head","p2HeadTpl"].forEach(f=>x[f]=c[f]); x.tahun = c.tahun || x.tahun;
+  const nums = String(c.ke||"").match(/\d+/g); if (nums) x.ke = String(Math.max(...nums.map(Number)) + 1); x.saksi = c.saksi.map(z=>({...z, tarikh:""}));
   x.bakiLepas = String(totals(c).baki); x.showBakiLepas = c.showBakiLepas;
-  db.recs.unshift(x); db.cur = x.id; db.tab = "isi"; save(); drawForm(); $(idOf("nama")).select(); toast("Rekod baru dibuat. Baki sebelum diambil dari rekod tadi."); };
+  db.recs.unshift(x); db.cur = x.id; db.tab = "isi"; save(); drawForm(); $(idOf("nama")).select(); toast(`Rekod baru: pengeluaran ke-${x.ke || "?"}, baki sebelum diambil dari rekod tadi.`); };
 $("bDup").onclick = ()=>{ const x = clone(cur()); x.id = uid(); x.nama = (x.nama||"") + " (salinan)"; db.recs.unshift(x); db.cur = x.id; save(); drawForm(); toast("Rekod disalin"); };
 let delArm = 0;
 $("bDel").onclick = ()=>{
