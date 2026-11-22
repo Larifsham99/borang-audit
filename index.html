@@ -29,7 +29,7 @@ button,input,textarea,select{font:inherit;color:inherit}
   display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 16px}
 .top h1{font-size:15px;margin:0 12px 0 0;font-weight:600}
 .top .grow{flex:1}
-select,input[type=text],input[type=number],textarea{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:7px 9px;width:100%;min-width:0}
+select,input[type=text],input[type=search],input[type=number],textarea{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:7px 9px;width:100%;min-width:0}
 textarea{resize:vertical}
 select:focus,input:focus,textarea:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 input:disabled{opacity:.7}
@@ -92,6 +92,18 @@ input[type=range]{width:100%}
 .fit{text-transform:none;letter-spacing:0}
 .ovf{color:var(--danger);text-transform:none;letter-spacing:0;font-weight:600;margin-left:8px}
 .ovf .btn{margin-left:6px;color:var(--fg)}
+.search{position:relative;flex:1 1 220px;max-width:360px;min-width:180px}
+.search input{width:100%}
+.qres{position:absolute;top:calc(100% + 4px);left:0;width:max(100%,340px);max-width:calc(100vw - 32px);max-height:60vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.18);z-index:30;padding:4px}
+.qres button{display:block;width:100%;text-align:left;border:0;background:none;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:13px;overflow-wrap:anywhere}
+.qres button:hover,.qres button.on{background:var(--soft)}
+.qres small{color:var(--muted);display:block;font-size:11px}
+mark{background:#ffe58a;color:#000;border-radius:2px;padding:0 1px}
+.sheet-wrap [data-f]{cursor:pointer}
+.sheet-wrap [data-f]:hover{outline:2px solid rgba(31,107,79,.6);outline-offset:2px;border-radius:2px}
+.flash{animation:flash 1.8s ease-out}
+@keyframes flash{0%,35%{box-shadow:0 0 0 4px var(--accent)}100%{box-shadow:0 0 0 4px transparent}}
+@media (prefers-reduced-motion:reduce){.flash{animation:none;box-shadow:0 0 0 3px var(--accent)}}
 .toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--fg);color:var(--bg);
   padding:8px 14px;border-radius:6px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20}
 .toast.on{opacity:1}
@@ -147,6 +159,7 @@ input[type=range]{width:100%}
   <button class="btn" id="bNew">+ Baru</button>
   <button class="btn" id="bDup">Salin</button>
   <button class="btn del" id="bDel">Padam</button>
+  <div class="search"><input type="search" id="q" placeholder="Cari semua rekod… (Ctrl+K)" aria-label="Cari semua rekod" autocomplete="off"><div class="qres" id="qres" hidden></div></div>
   <span class="grow"></span>
   <select id="pgSel" class="rec" style="min-width:150px" aria-label="Halaman untuk dicetak">
     <option value="both">Kedua-dua halaman</option>
@@ -321,19 +334,19 @@ function pageLand(r, kk){
   const S = r.st, E = S.el, k = (kk ?? S.kL)/100, t = totals(r), L = r.label, m = S.mL;
   const ts = key => tstyle(E[key], k);
   const amts = r.amaun.filter(a=>String(a).trim()!=="").map((a,i)=> (i===0?"RM ":"") + fmt(n(a), r.dec)).join(" + ") || "RM 0";
-  const extra = String(r.extraL||"").split("\n").filter(l=>l.trim()).map(l=>`<div style="${ts("extra")}">${esc(l)}</div>`).join("");
+  const extra = String(r.extraL||"").split("\n").filter(l=>l.trim()).map(l=>`<div data-f="extraL" style="${ts("extra")}">${esc(l)}</div>`).join("");
   return `<div class="page land" style="font-family:${FONTS[S.font].css};line-height:${S.lh}"><div class="land-in" style="padding:${m.t}mm ${m.r}mm ${m.b}mm ${m.l}mm">
     <div class="lmain" style="gap:${S.gapL}mm;text-align:${S.alignL};${S.vL==="center"?"margin-block:auto":""}">
-      ${r.tahun ? `<div style="${ts("year")}">(${esc(r.tahun)})</div>` : ""}
-      ${r.p1Head && headText(r, r.p1HeadTpl) ? `<div style="${ts("ke")}">${esc(headText(r, r.p1HeadTpl))}</div>` : ""}
-      ${r.tarikh ? `<div style="${ts("tarikh")}">${esc(r.tarikh)}</div>` : ""}
-      <div style="${ts("amt")}">= ${amts}</div>
-      ${r.showJK ? `<div style="${ts("jk")}">${esc(L.jk)} = ${money(t.keluar, r.dec)}</div>` : ""}
+      ${r.tahun ? `<div data-f="tahun" style="${ts("year")}">(${esc(r.tahun)})</div>` : ""}
+      ${r.p1Head && headText(r, r.p1HeadTpl) ? `<div data-f="ke" style="${ts("ke")}">${esc(headText(r, r.p1HeadTpl))}</div>` : ""}
+      ${r.tarikh ? `<div data-f="tarikh" style="${ts("tarikh")}">${esc(r.tarikh)}</div>` : ""}
+      <div data-f="amaun.0" style="${ts("amt")}">= ${amts}</div>
+      ${r.showJK ? `<div data-f="label.jk" style="${ts("jk")}">${esc(L.jk)} = ${money(t.keluar, r.dec)}</div>` : ""}
       ${sumberHtml(r, ts)}
-      ${r.showBakiLepas ? `<div style="${ts("bakiLepas")}">${esc(L.bakiLepas)} = ${money(t.lepas, r.dec)}</div>` : ""}
-      ${r.showBelanja ? `<div style="${ts("belanja")}">${esc(L.belanja)} = ${money(t.belanja, r.dec)}</div>` : ""}
-      ${r.showBaki ? `<div style="${ts("baki")}">${esc(L.baki)} = ${money(t.bakiShow, r.dec)}</div>` : ""}
-      ${t.tunai > 0 && r.showTunaiP1 ? `<div style="${ts("tunai")}">${esc(L.tunai)} = ${money(t.tunai, r.dec)}</div>${String(r.tunaiNote||"").trim()?`<div style="${ts("tunaiNote")};margin-top:-${(S.gapL*0.6).toFixed(1)}mm">${esc(r.tunaiNote)}</div>`:""}` : ""}
+      ${r.showBakiLepas ? `<div data-f="bakiLepas" style="${ts("bakiLepas")}">${esc(L.bakiLepas)} = ${money(t.lepas, r.dec)}</div>` : ""}
+      ${r.showBelanja ? `<div data-f="belanja" style="${ts("belanja")}">${esc(L.belanja)} = ${money(t.belanja, r.dec)}</div>` : ""}
+      ${r.showBaki ? `<div data-f="showBaki" style="${ts("baki")}">${esc(L.baki)} = ${money(t.bakiShow, r.dec)}</div>` : ""}
+      ${t.tunai > 0 && r.showTunaiP1 ? `<div data-f="tunaiManual" style="${ts("tunai")}">${esc(L.tunai)} = ${money(t.tunai, r.dec)}</div>${String(r.tunaiNote||"").trim()?`<div data-f="tunaiNote" style="${ts("tunaiNote")};margin-top:-${(S.gapL*0.6).toFixed(1)}mm">${esc(r.tunaiNote)}</div>`:""}` : ""}
       ${extra}
     </div>
     ${(r.signOn==="p1"||r.signOn==="both") ? signHtml(r, k, true) : ""}
@@ -344,8 +357,8 @@ function sumberHtml(r, ts){
   if (!r.showSumber || !rows.length) return "";
   const one = x => [String(x.a).trim() ? money(n(x.a), r.dec) : "", esc(String(x.k||"").trim())].filter(Boolean).join(" ");
   if (r.sumberFmt === "list")
-    return `<div style="${ts("sumber")};margin-top:-2mm">${rows.map(x=>`<div>• ${one(x)}</div>`).join("")}</div>`;
-  return `<div style="${ts("sumber")};margin-top:-2mm">(${rows.map(one).join(", ")})</div>`;
+    return `<div data-f="sumber.0.k" style="${ts("sumber")};margin-top:-2mm">${rows.map(x=>`<div>• ${one(x)}</div>`).join("")}</div>`;
+  return `<div data-f="sumber.0.k" style="${ts("sumber")};margin-top:-2mm">(${rows.map(one).join(", ")})</div>`;
 }
 function headText(r, tpl){
   const map = {pengeluaran:r.label.pengeluaran, ke:r.ke, tahun:r.tahun, tarikh:r.tarikh, nama:r.nama};
@@ -358,20 +371,21 @@ function signBlock(r, b){
   const ln = t => t ? `<div>${t}</div>` : "";
   let body = "";
   const lay = (b.multi && r.signLayout === "inline") ? "above" : r.signLayout;
-  if (lay === "inline") body = ln(jw && name ? `${esc(jw)} : ${name}` : (esc(jw) || name));
-  else if (lay === "above") body = ln(esc(jw)) + ln(name);
-  else body = ln(name) + ln(esc(jw));
-  const extra = String(b.extra||"").split("\n").filter(l=>l.trim()).map(l=>ln(esc(l))).join("");
+  const fp = b.fp || {}, lnf = (t,f) => t ? `<div data-f="${f}">${t}</div>` : "";
+  if (lay === "inline") body = lnf(jw && name ? `${esc(jw)} : ${name}` : (esc(jw) || name), fp.nama);
+  else if (lay === "above") body = lnf(esc(jw), fp.jawatan) + lnf(name, fp.nama);
+  else body = lnf(name, fp.nama) + lnf(esc(jw), fp.jawatan);
+  const extra = String(b.extra||"").split("\n").filter(l=>l.trim()).map(l=>lnf(esc(l), fp.extra)).join("");
   const topTxt = String(b.top||"").trim();
-  const top = (topTxt || b.padTop) ? `<div style="margin-bottom:.6em">${topTxt ? esc(topTxt) : "&nbsp;"}</div>` : "";
+  const top = (topTxt || b.padTop) ? `<div data-f="${fp.top}" style="margin-bottom:.6em">${topTxt ? esc(topTxt) : "&nbsp;"}</div>` : "";
   const dl = String(b.dateLabel||"").trim(), dv = String(b.date||"").trim() || (b.multi ? "..............." : "....................");
-  const date = b.dateOn ? `<div style="${r.signDatePos==="above"?"margin-bottom:.6em":(b.multi?"margin-top:auto;padding-top:.3em":"margin-top:.3em")}">${dl?esc(dl)+" : ":""}${esc(dv)}</div>` : "";
+  const date = b.dateOn ? `<div data-f="${fp.date}" style="${r.signDatePos==="above"?"margin-bottom:.6em":(b.multi?"margin-top:auto;padding-top:.3em":"margin-top:.3em")}">${dl?esc(dl)+" : ":""}${esc(dv)}</div>` : "";
   return `<div style="${b.multi?"display:flex;flex-direction:column;height:100%":""}">${top}${r.signDatePos==="above"?date:""}${r.signDots?`<div class="dots">${b.multi?"........................":".............................."}</div>`:""}${body}${extra}${r.signDatePos!=="above"?date:""}</div>`;
 }
 function signHtml(r, k, bottom){
   const S = r.st;
-  const mudir = {top:r.signTop, jawatan:r.signJawatan, nama:r.sign, extra:r.signExtra, dateOn:r.signDateOn, dateLabel:r.signDateLabel, date:r.signDate};
-  const saksi = r.saksiOn ? r.saksi.filter(x=>x.on !== false).map(x=>({top:x.top, jawatan:x.jawatan, nama:x.nama, extra:x.extra, dateOn:x.dateOn, dateLabel:x.dateLabel, date:x.tarikh})) : [];
+  const mudir = {fp:{nama:"sign", jawatan:"signJawatan", top:"signTop", date:"signDate", extra:"signExtra"}, top:r.signTop, jawatan:r.signJawatan, nama:r.sign, extra:r.signExtra, dateOn:r.signDateOn, dateLabel:r.signDateLabel, date:r.signDate};
+  const saksi = r.saksiOn ? r.saksi.map((x,i)=>({...x, i})).filter(x=>x.on !== false).map(x=>({fp:{nama:`saksi.${x.i}.nama`, jawatan:`saksi.${x.i}.jawatan`, top:`saksi.${x.i}.top`, date:`saksi.${x.i}.tarikh`, extra:`saksi.${x.i}.extra`}, top:x.top, jawatan:x.jawatan, nama:x.nama, extra:x.extra, dateOn:x.dateOn, dateLabel:x.dateLabel, date:x.tarikh})) : [];
   const list = S.mudirPos === "left" ? [mudir, ...saksi] : [...saksi, mudir];
   const base = `${tstyle(S.el.sign, k)};${bottom?"":"margin-top:12mm"}`;
   if (list.length === 1) return `<div class="lsign" style="${base};text-align:${S.alignSign}">${signBlock(r, mudir)}</div>`;
@@ -386,26 +400,26 @@ function pagePort(r, kk){
   const ts = key => tstyle(E[key], k);
   const lay = S.amtLayout || "below", d2 = r.dec || (lay !== "inline" && S.amtDec2);
   const numW = Math.max(4, ...r.items.map(it => fmt(Math.abs(itemAmt(it)), d2).length + (itemAmt(it) < 0 ? 2 : 0))) + 0.6;
-  const amtBox = v => `<span class="iamt" style="${ts("itemAmt")}"><span>RM</span><span style="width:${numW}ch">${v<0?"- ":""}${fmt(Math.abs(v), d2)}</span></span>`;
+  const amtBox = (v, f="") => `<span class="iamt" ${f} style="${ts("itemAmt")}"><span>RM</span><span style="width:${numW}ch">${v<0?"- ":""}${fmt(Math.abs(v), d2)}</span></span>`;
   const items = r.items.map((it,i)=>{
-    const subs = it.sub.filter(s=>s.t.trim() || String(s.a).trim());
-    const v = itemAmt(it);
+    const subs = it.sub.map((s,j)=>({...s, j})).filter(s=>s.t.trim() || String(s.a).trim());
+    const v = itemAmt(it), fN = `data-f="items.${i}.nama"`, fA = `data-f="items.${i}.amaun"`;
     let head;
-    if (lay === "below") head = `<div>${esc(it.nama)}</div><div class="irow">${amtBox(v)}</div>`;
-    else if (lay === "right") head = `<div class="iright"><span>${esc(it.nama)}</span>${S.amtLeader?`<span class="lead"></span>`:`<span></span>`}${amtBox(v)}</div>`;
-    else { const amt = `<span style="${ts("itemAmt")}">${money(v, r.dec)}</span>`; head = subs.length ? `${esc(it.nama)} = ${amt} :` : `${esc(it.nama)} ${amt}`; }
+    if (lay === "below") head = `<div ${fN}>${esc(it.nama)}</div><div class="irow">${amtBox(v, fA)}</div>`;
+    else if (lay === "right") head = `<div class="iright"><span ${fN}>${esc(it.nama)}</span>${S.amtLeader?`<span class="lead"></span>`:`<span></span>`}${amtBox(v, fA)}</div>`;
+    else { const amt = `<span ${fA} style="${ts("itemAmt")}">${money(v, r.dec)}</span>`; head = subs.length ? `<span ${fN}>${esc(it.nama)}</span> = ${amt} :` : `<span ${fN}>${esc(it.nama)}</span> ${amt}`; }
     const sl = subs.length ? `<div class="sub" style="${ts("sub")};--sw:${S.subStyle==="none"?"0":S.subStyle==="roman"?"2em":"1.5em"}">${subs.map((s,j)=>
-      `<div><span class="n">${subMark(S.subStyle,j)}</span><span>${esc(s.t)}${it.showSubAmt && String(s.a).trim() ? ` = <span style="${ts("subAmt")}">${money(n(s.a), r.dec)}</span>` : ""}</span></div>`).join("")}</div>` : "";
+      `<div data-f="items.${i}.sub.${s.j}.t"><span class="n">${subMark(S.subStyle,j)}</span><span>${esc(s.t)}${it.showSubAmt && String(s.a).trim() ? ` = <span style="${ts("subAmt")}">${money(n(s.a), r.dec)}</span>` : ""}</span></div>`).join("")}</div>` : "";
     const num = S.numStyle==="num" ? `${i+1}.` : S.numStyle==="paren" ? `${i+1})` : "";
     return `<div class="it" style="${ts("item")};--nw:${S.numStyle==="none"?"0":"1.6em"}"><span class="n">${num}</span><div>${head}${sl}</div></div>`;
   }).join("");
   return `<div class="page port" style="font-family:${FONTS[S.font].css};line-height:${S.lh}"><div class="port-in" style="padding:${m.t}mm ${m.r}mm ${m.b}mm ${m.l}mm">
-    ${r.p2Head && headText(r) ? `<div style="${ts("head")};text-align:${S.alignHead};margin-bottom:${S.gapHead}mm">${esc(headText(r))}</div>` : ""}
-    ${r.tajuk ? `<div style="${ts("tajuk")};text-align:${S.alignTajuk};text-transform:${S.upper?"uppercase":"none"};white-space:pre-line;line-height:${S.lh*1.1};margin-bottom:${S.gapTitle}mm">${esc(r.tajuk)}</div>` : ""}
+    ${r.p2Head && headText(r) ? `<div data-f="p2HeadTpl" style="${ts("head")};text-align:${S.alignHead};margin-bottom:${S.gapHead}mm">${esc(headText(r))}</div>` : ""}
+    ${r.tajuk ? `<div data-f="tajuk" style="${ts("tajuk")};text-align:${S.alignTajuk};text-transform:${S.upper?"uppercase":"none"};white-space:pre-line;line-height:${S.lh*1.1};margin-bottom:${S.gapTitle}mm">${esc(r.tajuk)}</div>` : ""}
     <div class="pitems" style="gap:${S.gapP}mm">${items}</div>
-    <div style="${ts("jumlah")};margin-top:${S.gapJumlah}mm">${esc(r.label.jumlah)} ${money(t.jumlah, r.dec)}</div>
-    ${t.tunai > 0 && r.showTunaiP2 ? `<div style="${ts("tunaiP")};margin-top:3mm">${esc(r.label.tunai)} ${money(t.tunai, r.dec)}</div>${String(r.tunaiNote||"").trim()?`<div style="${ts("tunaiNoteP")};margin-top:1.5mm">${esc(r.tunaiNote)}</div>`:""}` : ""}
-    ${r.nota ? `<div class="pnote" style="${ts("nota")};margin-top:6mm">${esc(r.nota)}</div>` : ""}
+    <div data-f="label.jumlah" style="${ts("jumlah")};margin-top:${S.gapJumlah}mm">${esc(r.label.jumlah)} ${money(t.jumlah, r.dec)}</div>
+    ${t.tunai > 0 && r.showTunaiP2 ? `<div data-f="tunaiManual" style="${ts("tunaiP")};margin-top:3mm">${esc(r.label.tunai)} ${money(t.tunai, r.dec)}</div>${String(r.tunaiNote||"").trim()?`<div data-f="tunaiNote" style="${ts("tunaiNoteP")};margin-top:1.5mm">${esc(r.tunaiNote)}</div>`:""}` : ""}
+    ${r.nota ? `<div class="pnote" data-f="nota" style="${ts("nota")};margin-top:6mm">${esc(r.nota)}</div>` : ""}
     ${(r.signOn==="p2"||r.signOn==="both") ? signHtml(r, k, S.signPos==="bottom") : ""}
   </div></div>`;
 }
@@ -450,6 +464,7 @@ function checkOverflow(){
   $("fitP").textContent = fitInfo.P ? `· dimuatkan automatik ke ${fitInfo.P}%` : "";
 }
 $("preview").addEventListener("click", e=>{
+  const ff = e.target.closest(".sheet-wrap [data-f]"); if (ff){ goTo(ff.dataset.f); return; }
   const b = e.target.closest("[data-fit]"); if (!b) return;
   const side = b.dataset.fit, r = cur(), key = "k"+side;
   while (overflows()[side] && r.st[key] > 50){ r.st[key] -= 2; $("printRoot").innerHTML = pageLand(r) + pagePort(r); }
@@ -762,6 +777,84 @@ $("form").addEventListener("click", e=>{
   save(); drawForm();
 });
 document.querySelector(".tabs").addEventListener("click", e=>{ const b = e.target.closest("[data-tab]"); if (!b) return; db.tab = b.dataset.tab; save(); $("form").scrollTop = 0; drawForm(); });
+
+/* ================= Lompat ke ruangan & carian ================= */
+function goTo(path){
+  const r = cur();
+  if (path.startsWith("saksi") && !r.saksiOn){ r.saksiOn = true; save(); drawForm(); }
+  if (path === "p2HeadTpl" && !r.p2Head) path = "p2Head";
+  if (path === "tunaiManual" && r.tunaiMode === "off") path = "tunaiMode";
+  if (path === "bakiLepas" && linked(r)) path = "#bakiLinkSel";
+  const find = () => path.startsWith("#") ? $("form").querySelector(path) : $("form").querySelector(`[data-k="${path}"]`);
+  let el = find();
+  if (!el){ for (const t of ["isi","kira","gaya","simpan"]){ db.tab = t; drawForm(); el = find(); if (el) break; } save(); }
+  if (!el){ toast("Ruangan ini tiada dalam borang"); return; }
+  el.scrollIntoView({block:"center", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"});
+  const hl = el.type === "checkbox" ? el.closest("label") : el;
+  hl.classList.remove("flash"); void hl.offsetWidth; hl.classList.add("flash");
+  setTimeout(()=>{ el.focus({preventScroll:true}); }, 300);
+}
+function fieldsOf(r){
+  const out = [], add = (p, lab, v) => { if (v != null && String(v).trim()) out.push({p, lab, v:String(v)}); };
+  add("nama","Nama rekod",r.nama); add("tahun","Tahun",r.tahun); add("ke","Pengeluaran ke-",r.ke); add("tarikh","Tarikh",r.tarikh);
+  r.amaun.forEach((a,i)=>add("amaun."+i,`Amaun pengeluaran ${i+1}`,a));
+  r.sumber.forEach((x,i)=>{ add(`sumber.${i}.k`,`Sumber dana ${i+1}`,x.k); add(`sumber.${i}.a`,`Amaun sumber ${i+1}`,x.a); });
+  add("bakiLepas","Baki sebelum",r.bakiLepas); add("belanja","Pembelanjaan",r.belanja);
+  add("tunaiManual","Amaun tunai",r.tunaiManual); add("tunaiNote","Nota kaki tunai",r.tunaiNote); add("extraL","Baris tambahan",r.extraL);
+  add("signJawatan","Jawatan penandatangan",r.signJawatan); add("sign","Nama penandatangan",r.sign); add("signTop","Teks atas tandatangan",r.signTop);
+  add("signDate","Tarikh disahkan",r.signDate); add("signExtra","Baris bawah nama",r.signExtra);
+  r.saksi.forEach((x,i)=>{ add(`saksi.${i}.nama`,`Saksi ${i+1}`,x.nama); add(`saksi.${i}.jawatan`,`Jawatan saksi ${i+1}`,x.jawatan); add(`saksi.${i}.top`,`Teks saksi ${i+1}`,x.top); add(`saksi.${i}.tarikh`,`Tarikh saksi ${i+1}`,x.tarikh); });
+  add("p1HeadTpl","Tajuk halaman 1",r.p1HeadTpl); add("p2HeadTpl","Tajuk halaman 2",r.p2HeadTpl); add("tajuk","Tajuk projek",r.tajuk);
+  r.items.forEach((it,i)=>{ add(`items.${i}.nama`,`Perkara ${i+1}`,it.nama); add(`items.${i}.amaun`,`Amaun perkara ${i+1}`,it.amaun);
+    it.sub.forEach((x,j)=>{ add(`items.${i}.sub.${j}.t`,`Perkara ${i+1} · pecahan ${subMark("alpha",j)}`,x.t); add(`items.${i}.sub.${j}.a`,`Perkara ${i+1} · amaun pecahan ${subMark("alpha",j)}`,x.a); }); });
+  add("nota","Catatan",r.nota);
+  r.kalk.forEach((x,i)=>{ add(`kalk.${i}.k`,`Kalkulator baris ${i+1}`,x.k); add(`kalk.${i}.a`,`Kalkulator amaun ${i+1}`,x.a); });
+  Object.entries(r.label).forEach(([k,v])=>add("label."+k,"Label",v));
+  return out;
+}
+const normS = v => String(v ?? "").toLowerCase().replace(/,/g,"");
+function snip(v, q){
+  v = String(v).replace(/\s+/g," ");
+  const re = new RegExp(q.replace(/,/g,"").split("").map(c=>c.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).join(",?"), "i");
+  const m = v.match(re); if (!m) return esc(v.slice(0,100));
+  const a = Math.max(0, m.index-40), b = Math.min(v.length, m.index+m[0].length+60);
+  return (a>0?"…":"") + esc(v.slice(a,m.index)) + "<mark>" + esc(m[0]) + "</mark>" + esc(v.slice(m.index+m[0].length,b)) + (b<v.length?"…":"");
+}
+function doSearch(){
+  const box = $("qres"), q = $("q").value.trim();
+  if (!q){ box.hidden = true; return; }
+  const nq = normS(q), res = [];
+  const recs = [cur(), ...db.recs.filter(x=>x.id!==cur().id)];
+  outer: for (const r of recs) for (const f of fieldsOf(r)){ if (normS(f.v).includes(nq)){ res.push({r,f}); if (res.length >= 80) break outer; } }
+  box.innerHTML = res.length
+    ? `<div class="hint" style="padding:4px 8px">${res.length}${res.length>=80?"+":""} hasil</div>` + res.map((x,k)=>`<button type="button" class="${k===0?"on":""}" data-ri="${x.r.id}" data-p="${x.f.p}"><small>${esc(x.r.nama||"(tanpa nama)")} · ${esc(x.f.lab)}</small>${snip(x.f.v, q)}</button>`).join("")
+    : `<div class="hint" style="padding:8px">Tiada hasil untuk "${esc(q)}"</div>`;
+  box.hidden = false;
+}
+function openResult(b){
+  if (!b) return;
+  $("qres").hidden = true;
+  if (db.cur !== b.dataset.ri){ db.cur = b.dataset.ri; save(); drawForm(); }
+  goTo(b.dataset.p);
+}
+$("q").addEventListener("input", doSearch);
+$("q").addEventListener("focus", ()=>{ if ($("q").value.trim()) doSearch(); });
+$("q").addEventListener("keydown", e=>{
+  const box = $("qres"), items = [...box.querySelectorAll("button")], i = items.findIndex(b=>b.classList.contains("on"));
+  if (e.key === "ArrowDown" || e.key === "ArrowUp"){
+    e.preventDefault(); if (!items.length) return;
+    const j = (i + (e.key==="ArrowDown"?1:-1) + items.length) % items.length;
+    items.forEach(b=>b.classList.remove("on")); items[j].classList.add("on"); items[j].scrollIntoView({block:"nearest"});
+  } else if (e.key === "Enter"){ e.preventDefault(); openResult(items[i>=0?i:0]); }
+  else if (e.key === "Escape"){ box.hidden = true; $("q").blur(); }
+});
+$("qres").addEventListener("mousedown", e=>e.preventDefault());
+$("qres").addEventListener("click", e=>openResult(e.target.closest("button[data-ri]")));
+document.addEventListener("click", e=>{ if (!e.target.closest(".search")) $("qres").hidden = true; });
+document.addEventListener("keydown", e=>{
+  const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName||"");
+  if ((e.key === "k" && (e.ctrlKey || e.metaKey)) || (e.key === "/" && !typing)){ e.preventDefault(); $("q").focus(); $("q").select(); }
+});
 
 /* ================= Rekod ================= */
 $("recSel").addEventListener("change", e=>{ db.cur = e.target.value; save(); drawForm(); });
