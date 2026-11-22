@@ -213,7 +213,7 @@ const FONTS = {
   tahoma:  {n:"Tahoma", css:'Tahoma,Verdana,sans-serif'}
 };
 const EL_L = [["year","Tahun"],["ke","Pengeluaran ke-"],["tarikh","Tarikh"],["amt","Amaun pengeluaran"],["jk","Jumlah pengeluaran"],["sumber","Nota sumber dana"],["bakiLepas","Baki sebelum"],["belanja","Pembelanjaan"],["baki","Baki dibawa kehadapan"],["tunai","Tunai"],["tunaiNote","Nota kaki tunai"],["extra","Baris tambahan"]];
-const EL_P = [["head","Tajuk automatik"],["tajuk","Tajuk projek"],["item","Nama perkara"],["itemAmt","Amaun perkara"],["sub","Pecahan (a, b, c)"],["subAmt","Amaun pecahan"],["jumlah","Jumlah"],["tunaiP","Tunai"],["tunaiNoteP","Nota kaki tunai"],["nota","Catatan"],["sign","Tandatangan"]];
+const EL_P = [["head","Tajuk automatik"],["tajuk","Tajuk projek"],["item","Nama perkara"],["itemAmt","Amaun perkara"],["sub","Pecahan (a, b, c)"],["subAmt","Amaun pecahan"],["jumlah","Jumlah"],["bakiP","Baki dibawa kehadapan"],["tunaiP","Tunai"],["tunaiNoteP","Nota kaki tunai"],["nota","Catatan"],["sign","Tandatangan"]];
 function defStyle(){
   return {
     font:"calibri", lh:1.25, kL:100, kP:100,
@@ -225,7 +225,7 @@ function defStyle(){
       year:{s:44,b:1,i:0,u:0}, ke:{s:34,b:1,i:0,u:0}, tarikh:{s:34,b:1,i:0,u:0}, amt:{s:40,b:1,i:0,u:0}, jk:{s:26,b:1,i:0,u:0}, sumber:{s:20,b:0,i:1,u:0},
       bakiLepas:{s:25,b:0,i:0,u:0}, belanja:{s:25,b:0,i:0,u:0}, baki:{s:25,b:0,i:0,u:0}, tunai:{s:25,b:1,i:0,u:0}, tunaiNote:{s:13,b:0,i:1,u:0}, extra:{s:18,b:0,i:0,u:0}, sign:{s:15,b:0,i:0,u:0},
       head:{s:18,b:1,i:0,u:1}, tajuk:{s:21,b:1,i:0,u:0}, item:{s:20,b:0,i:0,u:0}, itemAmt:{s:20,b:1,i:0,u:0}, sub:{s:17,b:0,i:0,u:0}, subAmt:{s:17,b:0,i:0,u:0},
-      jumlah:{s:28,b:1,i:0,u:0}, tunaiP:{s:22,b:1,i:0,u:0}, tunaiNoteP:{s:12,b:0,i:1,u:0}, nota:{s:14,b:0,i:0,u:0}
+      jumlah:{s:28,b:1,i:0,u:0}, bakiP:{s:20,b:1,i:0,u:0}, tunaiP:{s:22,b:1,i:0,u:0}, tunaiNoteP:{s:12,b:0,i:1,u:0}, nota:{s:14,b:0,i:0,u:0}
     }
   };
 }
@@ -234,7 +234,7 @@ function defaults(){
   return {
     id: uid(), nama:"Pengeluaran baru", tahun:String(new Date().getFullYear()), ke:"", tarikh:"",
     showJK:true, sumber:[], showSumber:true, sumberFmt:"inline",
-    amaun:[""], bakiLepas:"", bakiLink:"", showBakiLepas:false, belanja:"", showBelanja:true, showBaki:true,
+    amaun:[""], bakiLepas:"", bakiLink:"", showBakiLepas:false, belanja:"", showBelanja:true, showBaki:true, showBakiP2:true,
     tunaiMode:"auto", tunaiManual:"", tunaiNote:"* Lebihan pembelanjaan dibayar secara tunai.", showTunaiP1:true, showTunaiP2:true,
     sign:"Ustaz Md Mukhtar Bin Tuan Guru Haji Omar Zuhdi", signJawatan:"Mudir", signLayout:"inline", signBracket:false, signDots:true, signTop:"", signExtra:"", signDateOn:true, signDateLabel:"Tarikh disahkan", signDate:"", signDatePos:"below",
     saksiOn:false, saksi:[], p1Head:true, p1HeadTpl:"{pengeluaran} {ke}", p2Head:true, p2HeadTpl:"PEMBELANJAAN {pengeluaran} {ke} ({tahun})",
@@ -418,6 +418,7 @@ function pagePort(r, kk){
     ${r.tajuk ? `<div data-f="tajuk" style="${ts("tajuk")};text-align:${S.alignTajuk};text-transform:${S.upper?"uppercase":"none"};white-space:pre-line;line-height:${S.lh*1.1};margin-bottom:${S.gapTitle}mm">${esc(r.tajuk)}</div>` : ""}
     <div class="pitems" style="gap:${S.gapP}mm">${items}</div>
     <div data-f="label.jumlah" style="${ts("jumlah")};margin-top:${S.gapJumlah}mm">${esc(r.label.jumlah)} ${money(t.jumlah, r.dec)}</div>
+    ${r.showBakiP2 ? `<div data-f="showBakiP2" style="${ts("bakiP")};margin-top:3mm">${esc(r.label.baki)} ${money(t.bakiShow, r.dec)}</div>` : ""}
     ${t.tunai > 0 && r.showTunaiP2 ? `<div data-f="tunaiManual" style="${ts("tunaiP")};margin-top:3mm">${esc(r.label.tunai)} ${money(t.tunai, r.dec)}</div>${String(r.tunaiNote||"").trim()?`<div data-f="tunaiNote" style="${ts("tunaiNoteP")};margin-top:1.5mm">${esc(r.tunaiNote)}</div>`:""}` : ""}
     ${r.nota ? `<div class="pnote" data-f="nota" style="${ts("nota")};margin-top:6mm">${esc(r.nota)}</div>` : ""}
     ${(r.signOn==="p2"||r.signOn==="both") ? signHtml(r, k, S.signPos==="bottom") : ""}
@@ -540,7 +541,7 @@ function tabIsi(){
     <label><span>Pembelanjaan (kosong = ikut jumlah halaman 2)</span>${fExpr("belanja","auto")}</label>${evOut("belanja")}
     <div class="calc" data-sum></div><p class="warn" data-warn hidden></p>
     ${fChk("showBelanja","Papar baris pembelanjaan dalam dokumen")}
-    ${fChk("showBaki","Papar baris baki dibawa kehadapan dalam dokumen")}
+    <div class="row">${fChk("showBaki","Papar baki dibawa kehadapan di halaman 1")}${fChk("showBakiP2","Papar baki dibawa kehadapan di halaman 2")}</div>
     <div style="display:flex;flex-direction:column;gap:8px;border:1px dashed var(--line);border-radius:6px;padding:10px">
       <span class="hint" style="font-weight:600">Tunai (bila pembelanjaan melebihi pengeluaran)</span>
       ${fSel("tunaiMode","Kiraan tunai",[["auto","Automatik: lebihan belanja = tunai"],["off","Tidak digunakan"]],true)}
