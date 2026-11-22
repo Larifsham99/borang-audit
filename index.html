@@ -212,7 +212,8 @@ function defaults(){
   return {
     id: uid(), nama:"Pengeluaran baru", tahun:String(new Date().getFullYear()), ke:"", tarikh:"",
     amaun:[""], bakiLepas:"", showBakiLepas:false, belanja:"", showBelanja:true, showBaki:true,
-    sign:"", showSign:true, signOn:"p2", extraL:"",
+    sign:"Ustaz Md Mukhtar Bin Tuan Guru Haji Omar Zuhdi", signJawatan:"Mudir", signLayout:"inline", signBracket:false, signDots:true, signTop:"", signExtra:"",
+    showSign:true, signOn:"p2", extraL:"",
     tajuk:"", items:[newItem()], nota:"",
     label:{pengeluaran:"PENGELUARAN KE-", belanja:"PEMBELANJAAN", baki:"BAKI DIBAWA KEHADAPAN", jumlah:"JUMLAH", bakiLepas:"BAKI SEBELUM"},
     dec:false, kalk:[{k:"",a:""}], st:defStyle()
@@ -222,7 +223,7 @@ function sample(){
   const r = defaults();
   return Object.assign(r, {
     nama:"Pengeluaran 17 & 18 (2025) — contoh", tahun:"2025", ke:"17 DAN 18", tarikh:"(13/10) DAN (22/10) 2025",
-    amaun:["70000","30000"], sign:"USTAZ MD MUKHTAR BIN HAJI OMAR ZUHDI",
+    amaun:["70000","30000"],
     tajuk:"NAIK TARAF GARAJ KERETA BELAKANG KANTIN – KANDANG SEMBELIHAN – TUKAR SET CERMIN NAKO ASRAMA BELAKANG – TAMBAHAN PONDOK KAYU (PONDOK BELAKANG) – JALAN WARGA EMAS SERTA BEREK D11 HINGGA D15",
     items:[
       {nama:"BARANG HARDWARE", amaun:"43547.85", auto:false, showSubAmt:false, sub:[]},
@@ -251,6 +252,7 @@ function normalize(r){
     return x;
   });
   if (!r || !r.signOn) m.signOn = "p2";
+  if (/^\s*$|^USTAZ MD MUKHTAR BIN HAJI OMAR ZUHDI$/.test(m.sign) && !(r && "signJawatan" in r)){ m.sign = "Ustaz Md Mukhtar Bin Tuan Guru Haji Omar Zuhdi"; m.signJawatan = "Mudir"; }
   if (!Array.isArray(m.kalk) || !m.kalk.length) m.kalk = [{k:"",a:""}];
   return m;
 }
@@ -315,7 +317,16 @@ function pageLand(r){
 }
 function signHtml(r, k, bottom){
   const S = r.st;
-  return `<div class="lsign" style="${tstyle(S.el.sign, k)};text-align:${S.alignSign};${bottom?"":"margin-top:12mm"}"><div class="dots">..............................</div>${r.sign.trim()?`(${esc(r.sign)})`:""}</div>`;
+  const nm = String(r.sign||"").trim(), jw = String(r.signJawatan||"").trim();
+  const name = nm ? (r.signBracket ? `(${esc(nm)})` : esc(nm)) : "";
+  const ln = t => t ? `<div>${t}</div>` : "";
+  let body = "";
+  if (r.signLayout === "inline") body = ln(jw && name ? `${esc(jw)} : ${name}` : (esc(jw) || name));
+  else if (r.signLayout === "above") body = ln(esc(jw)) + ln(name);
+  else body = ln(name) + ln(esc(jw));
+  const extra = String(r.signExtra||"").split("\n").filter(l=>l.trim()).map(l=>ln(esc(l))).join("");
+  const top = String(r.signTop||"").trim() ? `<div style="margin-bottom:.6em">${esc(r.signTop)}</div>` : "";
+  return `<div class="lsign" style="${tstyle(S.el.sign, k)};text-align:${S.alignSign};${bottom?"":"margin-top:12mm"}">${top}${r.signDots?`<div class="dots">..............................</div>`:""}${body}${extra}</div>`;
 }
 function pagePort(r){
   const S = r.st, E = S.el, k = S.kP/100, t = totals(r), m = S.mP;
@@ -402,8 +413,15 @@ function tabIsi(){
     <div class="calc" data-sum></div><p class="warn" data-warn hidden></p>
     ${fChk("showBelanja","Papar baris pembelanjaan dalam dokumen")}
     ${fChk("showBaki","Papar baris baki dibawa kehadapan dalam dokumen")}
-    ${fText("sign","Nama penandatangan")}
+    <div style="display:flex;flex-direction:column;gap:8px;border:1px dashed var(--line);border-radius:6px;padding:10px">
+      <span class="hint" style="font-weight:600">Tandatangan</span>
+      <div class="row">${fText("signJawatan","Jawatan","Mudir")}<div style="flex:2.5">${fText("sign","Nama penandatangan")}</div></div>
+      ${fSel("signLayout","Susunan",[["inline","Jawatan : Nama (satu baris)"],["below","Nama, jawatan di bawah"],["above","Jawatan di atas, nama di bawah"]])}
+      ${fText("signTop","Teks di atas tandatangan (pilihan)","cth. Disahkan oleh,")}
+      ${fArea("signExtra","Baris di bawah nama (pilihan)",2,"cth. Pondok ...")}
+      <div class="row">${fChk("signBracket","Nama dalam kurungan ( )")}${fChk("signDots","Garis titik tandatangan")}</div>
     ${fSel("signOn","Letak tandatangan di",[["p2","Halaman 2 (potret)"],["p1","Halaman 1 (landskap)"],["both","Kedua-dua halaman"],["none","Tiada"]])}
+    </div>
     ${fArea("extraL","Baris tambahan (satu baris satu, pilihan)",2,"cth. DISEMAK OLEH: ...")}
   </fieldset>
   <fieldset><legend>Halaman 2 · Potret (perincian)</legend>
@@ -585,7 +603,7 @@ document.querySelector(".tabs").addEventListener("click", e=>{ const b = e.targe
 
 /* ================= Rekod ================= */
 $("recSel").addEventListener("change", e=>{ db.cur = e.target.value; save(); drawForm(); });
-$("bNew").onclick = ()=>{ const c = cur(), x = defaults(); x.st = clone(c.st); x.label = clone(c.label); x.dec = c.dec; x.sign = c.sign;
+$("bNew").onclick = ()=>{ const c = cur(), x = defaults(); x.st = clone(c.st); x.label = clone(c.label); x.dec = c.dec; ["sign","signJawatan","signLayout","signBracket","signDots","signTop","signExtra","signOn"].forEach(f=>x[f]=c[f]);
   x.bakiLepas = String(totals(c).baki); x.showBakiLepas = c.showBakiLepas;
   db.recs.unshift(x); db.cur = x.id; db.tab = "isi"; save(); drawForm(); $(idOf("nama")).select(); toast("Rekod baru dibuat. Baki sebelum diambil dari rekod tadi."); };
 $("bDup").onclick = ()=>{ const x = clone(cur()); x.id = uid(); x.nama = (x.nama||"") + " (salinan)"; db.recs.unshift(x); db.cur = x.id; save(); drawForm(); toast("Rekod disalin"); };
