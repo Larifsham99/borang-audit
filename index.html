@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Borang Audit Pengeluaran</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Carlito:wght@400;700&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Susun atur: bar atas + borang di kiri + pratonton kertas A4 di kanan (bertindan di telefon) */
+:root{
+  --bg:#eef1ef; --panel:#ffffff; --fg:#1d2a24; --muted:#5d6b64; --line:#d5ddd8;
+  --accent:#1f6b4f; --accent-fg:#ffffff; --danger:#b23a2e; --desk:#cfd6d2;
+  --ui:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --doc:Calibri,"Carlito","Segoe UI",Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141a17; --panel:#1c2420; --fg:#e4ebe7; --muted:#9aa8a1; --line:#2f3a35;
+  --accent:#4fb08a; --accent-fg:#0d1512; --danger:#e0796d; --desk:#0f1311; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141a17; --panel:#1c2420; --fg:#e4ebe7; --muted:#9aa8a1; --line:#2f3a35;
+  --accent:#4fb08a; --accent-fg:#0d1512; --danger:#e0796d; --desk:#0f1311; color-scheme:dark}
+
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--fg);font:14px/1.45 var(--ui)}
+button,input,textarea,select{font:inherit;color:inherit}
+
+/* ---------- Bar atas ---------- */
+.top{position:sticky;top:0;z-index:5;background:var(--panel);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 16px}
+.top h1{font-size:15px;margin:0 12px 0 0;font-weight:600;letter-spacing:.01em}
+.top .grow{flex:1}
+select,input[type=text],input[type=number],textarea{background:var(--bg);border:1px solid var(--line);
+  border-radius:6px;padding:7px 9px;width:100%}
+textarea{resize:vertical}
+select:focus,input:focus,textarea:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.rec{width:auto;min-width:200px;max-width:100%}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:7px 12px;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn.pri{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:600}
+.btn.sm{padding:3px 8px;font-size:12px}
+.btn.del{color:var(--danger)}
+
+/* ---------- Kandungan ---------- */
+.main{display:grid;grid-template-columns:minmax(320px,440px) 1fr;min-height:calc(100% - 58px)}
+.form{border-right:1px solid var(--line);padding:16px;overflow:auto;max-height:calc(100vh - 58px);position:sticky;top:58px;
+  display:flex;flex-direction:column;gap:18px}
+.preview{background:var(--desk);padding:20px 16px;display:flex;flex-direction:column;align-items:center;gap:24px;min-width:0}
+.preview .cap{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;align-self:flex-start;margin-bottom:-16px}
+.sheet-wrap{position:relative;box-shadow:0 2px 14px rgba(0,0,0,.18);background:#fff}
+.sheet-wrap > .page{transform-origin:0 0;position:absolute;left:0;top:0}
+
+fieldset{border:1px solid var(--line);border-radius:8px;padding:12px;margin:0;display:flex;flex-direction:column;gap:10px;background:var(--panel)}
+legend{font-weight:600;padding:0 6px;font-size:13px}
+label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
+label > span{text-transform:uppercase;letter-spacing:.05em}
+.row{display:flex;gap:8px;align-items:flex-end}
+.row > *{flex:1;min-width:0}
+.hint{font-size:12px;color:var(--muted);margin:0}
+.calc{font-variant-numeric:tabular-nums;font-size:13px;display:grid;grid-template-columns:1fr auto;gap:2px 12px;
+  background:var(--bg);border-radius:6px;padding:8px 10px}
+.calc b{text-align:right}
+.neg{color:var(--danger)}
+.item{border:1px dashed var(--line);border-radius:6px;padding:10px;display:flex;flex-direction:column;gap:8px}
+.item-head{display:flex;gap:6px;align-items:center}
+.item-head strong{flex:1;font-size:12px;color:var(--muted)}
+.amt-row{display:flex;gap:6px}
+.amt-row input{flex:1}
+.check{flex-direction:row;align-items:center;gap:8px;color:var(--fg);font-size:13px}
+.check input{width:auto}
+input[type=range]{width:100%}
+.toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--fg);color:var(--bg);
+  padding:8px 14px;border-radius:6px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20}
+.toast.on{opacity:1}
+
+@media (max-width:860px){
+  .main{grid-template-columns:1fr}
+  .form{position:static;max-height:none;border-right:0;border-bottom:1px solid var(--line)}
+}
+
+/* ---------- Halaman dokumen (sentiasa putih, macam kertas sebenar) ---------- */
+.page{background:#fff;color:#000;font-family:var(--doc);overflow:hidden;position:relative}
+.page.land{width:297mm;height:210mm}
+.page.port{width:210mm;height:297mm}
+
+.land-in{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;text-align:center;
+  padding:16mm 20mm 14mm;font-size:calc(1pt * var(--k,1))}
+.land-in .l-year{font-size:44em;font-weight:700;line-height:1.1}
+.land-in .l-big{font-size:34em;font-weight:700;line-height:1.15;margin-top:.55em}
+.land-in .l-amt{font-size:40em;font-weight:700;line-height:1.15;margin-top:.4em}
+.land-in .l-norm{font-size:25em;line-height:1.2;margin-top:.7em}
+.land-in .l-norm + .l-norm{margin-top:.55em}
+.land-in .sign{margin-top:auto;font-size:15em;line-height:1.5}
+.land-in .sign .dots{letter-spacing:.12em;font-weight:700;margin-bottom:1.2em}
+
+.port-in{position:absolute;inset:0;padding:22mm 18mm 18mm 22mm;font-size:calc(1pt * var(--k,1))}
+.port-in .p-title{font-size:21em;font-weight:700;line-height:1.38;text-transform:uppercase;white-space:pre-line;margin:0 0 .5em}
+.port-in ol{list-style:none;margin:0;padding:0}
+.port-in li.it{display:grid;grid-template-columns:1.6em 1fr;font-size:20em;line-height:1.3;margin:.35em 0}
+.port-in li.it .n{font-weight:700}
+.port-in li.it b{font-weight:700}
+.port-in ul.sub{list-style:none;margin:.15em 0 0;padding:0}
+.port-in ul.sub li{display:grid;grid-template-columns:1.4em 1fr;font-size:.87em;line-height:1.3;margin:.12em 0}
+.port-in ul.sub li .n{font-weight:700}
+.port-in .p-total{font-size:28em;font-weight:700;margin-top:1.1em}
+.port-in .p-note{font-size:14em;margin-top:1em;white-space:pre-line}
+
+/* Akar cetakan: tersorok di skrin, digunakan untuk Cetak & PDF */
+#printRoot{position:fixed;left:-10000px;top:0}
+
+@page land{size:A4 landscape;margin:0}
+@page port{size:A4 portrait;margin:0}
+@media print{
+  html,body{background:#fff;height:auto}
+  .top,.main,.toast{display:none!important}
+  #printRoot{position:static;left:auto}
+  #printRoot .page{break-after:page;page-break-after:always}
+  #printRoot .page:last-child{break-after:auto;page-break-after:auto}
+  #printRoot .page.land{page:land}
+  #printRoot .page.port{page:port}
+  #printRoot.only-land .page.port,#printRoot.only-port .page.land{display:none}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <h1>Borang Audit Pengeluaran</h1>
+  <select id="recSel" class="rec" aria-label="Pilih rekod"></select>
+  <button class="btn" id="bNew">+ Baru</button>
+  <button class="btn" id="bDup">Salin</button>
+  <button class="btn del" id="bDel">Padam</button>
+  <span class="grow"></span>
+  <select id="pgSel" class="rec" style="min-width:150px" aria-label="Halaman untuk dicetak">
+    <option value="both">Kedua-dua halaman</option>
+    <option value="land">Landskap sahaja</option>
+    <option value="port">Potret sahaja</option>
+  </select>
+  <button class="btn" id="bPrint">Cetak</button>
+  <button class="btn pri" id="bPdf">Muat turun PDF</button>
+</header>
+
+<div class="main">
+  <form class="form" id="form" autocomplete="off" onsubmit="return false">
+
+    <fieldset>
+      <legend>Halaman 1 · Landskap (ringkasan)</legend>
+      <label><span>Nama rekod (untuk senarai sahaja)</span><input type="text" id="f_nama"></label>
+      <div class="row">
+        <label><span>Tahun</span><input type="text" id="f_tahun"></label>
+        <label><span>Pengeluaran ke-</span><input type="text" id="f_ke" placeholder="17 DAN 18"></label>
+      </div>
+      <label><span>Tarikh</span><input type="text" id="f_tarikh" placeholder="(13/10) DAN (22/10) 2025"></label>
+      <div>
+        <label><span>Amaun pengeluaran (RM)</span></label>
+        <div id="amtList" style="display:flex;flex-direction:column;gap:6px;margin-top:4px"></div>
+        <button type="button" class="btn sm" id="bAddAmt" style="margin-top:6px">+ Tambah amaun</button>
+      </div>
+      <label><span>Pembelanjaan (kosongkan = ikut jumlah halaman 2)</span><input type="text" id="f_belanja" placeholder="auto"></label>
+      <div class="calc" id="calc"></div>
+      <label><span>Nama penandatangan</span><input type="text" id="f_sign"></label>
+      <label class="check"><input type="checkbox" id="f_showSign"> Papar ruang tandatangan</label>
+      <label><span>Saiz tulisan landskap: <b id="kLv"></b></span><input type="range" id="f_kL" min="60" max="140" step="2"></label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Halaman 2 · Potret (perincian)</legend>
+      <label><span>Tajuk projek</span><textarea id="f_tajuk" rows="5"></textarea></label>
+      <div id="itemList" style="display:flex;flex-direction:column;gap:10px"></div>
+      <button type="button" class="btn sm" id="bAddItem">+ Tambah perkara</button>
+      <label><span>Catatan bawah (pilihan)</span><textarea id="f_nota" rows="2"></textarea></label>
+      <label><span>Saiz tulisan potret: <b id="kPv"></b></span><input type="range" id="f_kP" min="60" max="140" step="2"></label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Label &amp; tetapan</legend>
+      <div class="row">
+        <label><span>Label pengeluaran</span><input type="text" id="l_pengeluaran"></label>
+        <label><span>Label jumlah</span><input type="text" id="l_jumlah"></label>
+      </div>
+      <div class="row">
+        <label><span>Label belanja</span><input type="text" id="l_belanja"></label>
+        <label><span>Label baki</span><input type="text" id="l_baki"></label>
+      </div>
+      <label class="check"><input type="checkbox" id="f_dec"> Sentiasa papar 2 tempat perpuluhan (cth. RM 7,950.00)</label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Simpanan</legend>
+      <p class="hint">Semua rekod disimpan automatik dalam pelayar ini. Buat sandaran ke fail supaya tidak hilang atau untuk dipindah ke komputer lain.</p>
+      <div class="row">
+        <button type="button" class="btn" id="bExport">Simpan sandaran (.json)</button>
+        <button type="button" class="btn" id="bImport">Buka sandaran</button>
+      </div>
+      <input type="file" id="fileIn" accept=".json,application/json" hidden>
+    </fieldset>
+  </form>
+
+  <section class="preview" id="preview" aria-label="Pratonton">
+    <div class="cap">Halaman 1 · A4 landskap</div>
+    <div class="sheet-wrap" id="wrapL"></div>
+    <div class="cap">Halaman 2 · A4 potret</div>
+    <div class="sheet-wrap" id="wrapP"></div>
+  </section>
+</div>
+
+<div id="printRoot"></div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+<script>
+(function(){
+"use strict";
+const KEY = "borangAudit.v1";
+const $ = id => document.getElementById(id);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function sample(){
+  return {
+    id: uid(), nama: "Pengeluaran 17 & 18 (2025) — contoh",
+    tahun: "2025", ke: "17 DAN 18", tarikh: "(13/10) DAN (22/10) 2025",
+    amaun: [70000, 30000], belanja: "",
+    sign: "USTAZ MD MUKHTAR BIN HAJI OMAR ZUHDI", showSign: true,
+    tajuk: "NAIK TARAF GARAJ KERETA BELAKANG KANTIN – KANDANG SEMBELIHAN – TUKAR SET CERMIN NAKO ASRAMA BELAKANG – TAMBAHAN PONDOK KAYU (PONDOK BELAKANG) – JALAN WARGA EMAS SERTA BEREK D11 HINGGA D15",
+    items: [
+      {nama:"BARANG HARDWARE", amaun:43547.85, sub:""},
+      {nama:"KERJA BESI", amaun:7950, sub:""},
+      {nama:"WIRING", amaun:961, sub:""},
+      {nama:"UPAH TUKANG", amaun:42300, sub:"Naik taraf garaj belakang kantin\nNaik taraf kendang sembelihan\nPondok kayu E21 dan E22\nPemasangan palung air bumbung dorm\nTukar set cermin nako\nNaik taraf jalan warga emas dan penambahan saluran kumbahan\nNaik taraf bilik D11 hingga D15"}
+    ],
+    nota: "",
+    label: {pengeluaran:"PENGELUARAN KE-", belanja:"PEMBELANJAAN", baki:"BAKI DIBAWA KEHADAPAN", jumlah:"JUMLAH"},
+    kL: 100, kP: 100, dec: false
+  };
+}
+function blank(prev){
+  const s = sample();
+  return Object.assign(s, {
+    nama: "Pengeluaran baru", ke: "", tarikh: "", amaun: [0], belanja: "",
+    sign: prev ? prev.sign : s.sign, tajuk: "", items: [{nama:"", amaun:0, sub:""}], nota: "",
+    label: prev ? {...prev.label} : s.label
+  });
+}
+
+/* ---------- Simpanan ---------- */
+let db = {recs: [], cur: null};
+try { const raw = localStorage.getItem(KEY); if (raw) db = JSON.parse(raw); } catch(e){}
+if (!Array.isArray(db.recs) || !db.recs.length){ const s = sample(); db = {recs:[s], cur:s.id}; }
+let saveT;
+function save(){ clearTimeout(saveT); saveT = setTimeout(()=>{ try{ localStorage.setItem(KEY, JSON.stringify(db)); }catch(e){} }, 250); }
+const cur = () => db.recs.find(r => r.id === db.cur) || db.recs[0];
+
+/* ---------- Nombor ---------- */
+const num = v => { const n = parseFloat(String(v).replace(/[^0-9.\-]/g,"")); return isFinite(n) ? n : 0; };
+const r2 = n => Math.round(n*100)/100;
+function fmt(n, dec){
+  n = r2(n);
+  const frac = !Number.isInteger(n) || dec;
+  return n.toLocaleString("en-US", {minimumFractionDigits: frac?2:0, maximumFractionDigits: 2});
+}
+function money(n, dec){ return (n < 0 ? "- " : "") + "RM " + fmt(Math.abs(n), dec); }
+function totals(r){
+  const masuk = r2(r.amaun.reduce((a,b)=>a+num(b),0));
+  const jumlah = r2(r.items.reduce((a,it)=>a+num(it.amaun),0));
+  const belanja = String(r.belanja).trim() === "" ? jumlah : r2(num(r.belanja));
+  return {masuk, jumlah, belanja, baki: r2(masuk - belanja)};
+}
+
+/* ---------- Jana halaman ---------- */
+function pageLand(r){
+  const t = totals(r), L = r.label;
+  const amts = r.amaun.map((a,i)=> (i===0 ? "RM " : "") + fmt(num(a), r.dec)).join(" + ");
+  return `<div class="page land"><div class="land-in" style="--k:${r.kL/100}">
+    ${r.tahun ? `<div class="l-year">(${esc(r.tahun)})</div>` : ""}
+    <div class="l-big">${esc(L.pengeluaran)} ${esc(r.ke)}</div>
+    ${r.tarikh ? `<div class="l-big">${esc(r.tarikh)}</div>` : ""}
+    <div class="l-amt">= ${amts}</div>
+    <div class="l-norm">${esc(L.belanja)} = ${money(t.belanja, r.dec)}</div>
+    <div class="l-norm">${esc(L.baki)} = ${money(t.baki, r.dec)}</div>
+    ${r.showSign ? `<div class="sign"><div class="dots">..............................</div>(${esc(r.sign)})</div>` : ""}
+  </div></div>`;
+}
+function pagePort(r){
+  const t = totals(r), letters = "abcdefghijklmnopqrstuvwxyz";
+  const items = r.items.map((it,i)=>{
+    const subs = String(it.sub||"").split("\n").map(s=>s.trim()).filter(Boolean);
+    const amt = `<b>${money(num(it.amaun), r.dec)}</b>`;
+    const head = subs.length ? `${esc(it.nama)} = ${amt} :` : `${esc(it.nama)} ${amt}`;
+    const sl = subs.length ? `<ul class="sub">${subs.map((s,j)=>`<li><span class="n">${letters[j%26]}.</span><span>${esc(s)}</span></li>`).join("")}</ul>` : "";
+    return `<li class="it"><span class="n">${i+1}.</span><div>${head}${sl}</div></li>`;
+  }).join("");
+  return `<div class="page port"><div class="port-in" style="--k:${r.kP/100}">
+    ${r.tajuk ? `<div class="p-title">${esc(r.tajuk)}</div>` : ""}
+    <ol>${items}</ol>
+    <div class="p-total">${esc(r.label.jumlah)} ${money(t.jumlah, r.dec)}</div>
+    ${r.nota ? `<div class="p-note">${esc(r.nota)}</div>` : ""}
+  </div></div>`;
+}
+
+const MM = 96/25.4;
+function fitPreview(){
+  const avail = Math.max(260, $("preview").clientWidth - 32);
+  [["wrapL",297,210],["wrapP",210,297]].forEach(([id,w,h])=>{
+    const el = $(id), pw = w*MM, ph = h*MM;
+    const s = Math.min(1, avail/pw);
+    el.style.width = pw*s + "px"; el.style.height = ph*s + "px";
+    const pg = el.firstElementChild; if (pg) pg.style.transform = `scale(${s})`;
+  });
+}
+function render(){
+  const r = cur();
+  $("wrapL").innerHTML = pageLand(r);
+  $("wrapP").innerHTML = pagePort(r);
+  $("printRoot").innerHTML = pageLand(r) + pagePort(r);
+  fitPreview();
+  const t = totals(r);
+  $("calc").innerHTML = `<span>Jumlah pengeluaran</span><b>${money(t.masuk,true)}</b>
+    <span>Jumlah perkara (halaman 2)</span><b>${money(t.jumlah,true)}</b>
+    <span>Pembelanjaan</span><b>${money(t.belanja,true)}</b>
+    <span>Baki dibawa kehadapan</span><b class="${t.baki<0?"neg":""}">${money(t.baki,true)}</b>`;
+  $("kLv").textContent = r.kL + "%"; $("kPv").textContent = r.kP + "%";
+  const opt = $("recSel").querySelector(`option[value="${r.id}"]`); if (opt) opt.textContent = r.nama || "(tanpa nama)";
+}
+
+/* ---------- Borang ---------- */
+const simple = {f_nama:"nama", f_tahun:"tahun", f_ke:"ke", f_tarikh:"tarikh", f_belanja:"belanja", f_sign:"sign", f_tajuk:"tajuk", f_nota:"nota"};
+function fillForm(){
+  const r = cur();
+  for (const [id,k] of Object.entries(simple)) $(id).value = r[k] ?? "";
+  $("f_showSign").checked = !!r.showSign; $("f_dec").checked = !!r.dec;
+  $("f_kL").value = r.kL; $("f_kP").value = r.kP;
+  for (const k of ["pengeluaran","belanja","baki","jumlah"]) $("l_"+k).value = r.label[k];
+  $("recSel").innerHTML = db.recs.map(x=>`<option value="${x.id}">${esc(x.nama||"(tanpa nama)")}</option>`).join("");
+  $("recSel").value = r.id;
+  drawAmts(); drawItems(); render();
+}
+function drawAmts(){
+  const r = cur();
+  $("amtList").innerHTML = r.amaun.map((a,i)=>`<div class="amt-row">
+    <input type="number" step="0.01" inputmode="decimal" id="amt_${i}" data-amt="${i}" value="${a}" aria-label="Amaun ${i+1}">
+    ${r.amaun.length>1 ? `<button type="button" class="btn sm del" data-delamt="${i}" aria-label="Buang amaun">✕</button>` : ""}</div>`).join("");
+}
+function drawItems(){
+  const r = cur();
+  $("itemList").innerHTML = r.items.map((it,i)=>`<div class="item">
+    <div class="item-head"><strong>Perkara ${i+1}</strong>
+      <button type="button" class="btn sm" data-mv="${i}:-1" ${i===0?"disabled":""} aria-label="Naik">↑</button>
+      <button type="button" class="btn sm" data-mv="${i}:1" ${i===r.items.length-1?"disabled":""} aria-label="Turun">↓</button>
+      <button type="button" class="btn sm del" data-delit="${i}">Buang</button></div>
+    <div class="row">
+      <label style="flex:2"><span>Perkara</span><input type="text" id="it_n_${i}" data-it="${i}" data-f="nama" value="${esc(it.nama)}"></label>
+      <label><span>Amaun (RM)</span><input type="number" step="0.01" inputmode="decimal" id="it_a_${i}" data-it="${i}" data-f="amaun" value="${it.amaun}"></label>
+    </div>
+    <label><span>Pecahan a, b, c… (satu baris satu, pilihan)</span><textarea rows="${Math.max(2, String(it.sub||"").split("\n").length)}" id="it_s_${i}" data-it="${i}" data-f="sub">${esc(it.sub)}</textarea></label>
+  </div>`).join("");
+}
+
+$("form").addEventListener("input", e=>{
+  const el = e.target, r = cur();
+  if (simple[el.id]) r[simple[el.id]] = el.value;
+  else if (el.id === "f_showSign") r.showSign = el.checked;
+  else if (el.id === "f_dec") r.dec = el.checked;
+  else if (el.id === "f_kL") r.kL = +el.value;
+  else if (el.id === "f_kP") r.kP = +el.value;
+  else if (el.id.startsWith("l_")) r.label[el.id.slice(2)] = el.value;
+  else if (el.dataset.amt != null) r.amaun[+el.dataset.amt] = el.value === "" ? 0 : num(el.value);
+  else if (el.dataset.it != null){ const it = r.items[+el.dataset.it], f = el.dataset.f; it[f] = f==="amaun" ? (el.value===""?0:num(el.value)) : el.value; }
+  else return;
+  save(); render();
+});
+$("form").addEventListener("click", e=>{
+  const b = e.target.closest("button"); if (!b) return;
+  const r = cur();
+  if (b.dataset.delamt != null){ r.amaun.splice(+b.dataset.delamt,1); drawAmts(); }
+  else if (b.dataset.delit != null){ r.items.splice(+b.dataset.delit,1); if(!r.items.length) r.items.push({nama:"",amaun:0,sub:""}); drawItems(); }
+  else if (b.dataset.mv){ const [i,d] = b.dataset.mv.split(":").map(Number), j=i+d; [r.items[i],r.items[j]]=[r.items[j],r.items[i]]; drawItems(); }
+  else if (b.id === "bAddAmt"){ r.amaun.push(0); drawAmts(); $("amt_"+(r.amaun.length-1)).focus(); }
+  else if (b.id === "bAddItem"){ r.items.push({nama:"",amaun:0,sub:""}); drawItems(); $("it_n_"+(r.items.length-1)).focus(); }
+  else if (b.id === "bExport") return exportJson();
+  else if (b.id === "bImport") return $("fileIn").click();
+  else return;
+  save(); render();
+});
+
+/* ---------- Rekod ---------- */
+$("recSel").addEventListener("change", e=>{ db.cur = e.target.value; save(); fillForm(); });
+$("bNew").onclick = ()=>{ const n = blank(cur()); db.recs.unshift(n); db.cur = n.id; save(); fillForm(); $("f_nama").select(); toast("Rekod baru dibuat"); };
+$("bDup").onclick = ()=>{ const n = JSON.parse(JSON.stringify(cur())); n.id = uid(); n.nama = (n.nama||"") + " (salinan)"; db.recs.unshift(n); db.cur = n.id; save(); fillForm(); toast("Rekod disalin"); };
+let delArm = 0;
+$("bDel").onclick = ()=>{
+  if (Date.now() - delArm > 3000){ delArm = Date.now(); $("bDel").textContent = "Tekan lagi untuk padam"; setTimeout(()=>{ $("bDel").textContent="Padam"; }, 3000); return; }
+  delArm = 0; $("bDel").textContent = "Padam";
+  db.recs = db.recs.filter(r=>r.id!==db.cur);
+  if (!db.recs.length) db.recs.push(blank());
+  db.cur = db.recs[0].id; save(); fillForm(); toast("Rekod dipadam");
+};
+
+/* ---------- Sandaran ---------- */
+function download(blob, name){
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+const safeName = s => (s||"borang").replace(/[^\w\- ]+/g,"").trim().replace(/\s+/g,"_").slice(0,60) || "borang";
+function exportJson(){
+  const d = new Date().toISOString().slice(0,10);
+  download(new Blob([JSON.stringify(db,null,2)],{type:"application/json"}), `sandaran_borang_audit_${d}.json`);
+  toast("Sandaran disimpan");
+}
+$("fileIn").onchange = async e=>{
+  const f = e.target.files[0]; if (!f) return;
+  try{
+    const d = JSON.parse(await f.text());
+    const recs = Array.isArray(d.recs) ? d.recs : (d.items ? [d] : null);
+    if (!recs) throw 0;
+    const ids = new Set(db.recs.map(r=>r.id));
+    recs.forEach(r=>{ const base = sample(); const m = Object.assign(base, r, {label:Object.assign(base.label, r.label||{})}); if (ids.has(m.id)) db.recs = db.recs.filter(x=>x.id!==m.id); db.recs.push(m); });
+    db.cur = recs[0].id; save(); fillForm(); toast(`${recs.length} rekod dibuka`);
+  }catch(_){ toast("Fail ini bukan sandaran borang audit yang sah"); }
+  e.target.value = "";
+};
+
+/* ---------- Cetak & PDF ---------- */
+function setPrintPages(){ const v = $("pgSel").value; $("printRoot").className = v==="both" ? "" : "only-"+v; return v; }
+$("bPrint").onclick = ()=>{ setPrintPages(); window.print(); };
+$("bPdf").onclick = async ()=>{
+  if (!window.html2canvas || !window.jspdf){ toast("Pustaka PDF belum dimuat (perlu internet). Guna Cetak → Simpan sebagai PDF."); return; }
+  const v = setPrintPages(), btn = $("bPdf"); btn.disabled = true; btn.textContent = "Menjana…";
+  try{
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    const pages = [...$("printRoot").querySelectorAll(".page")].filter(p=> v==="both" || p.classList.contains(v));
+    const { jsPDF } = window.jspdf; let pdf = null;
+    for (const p of pages){
+      const land = p.classList.contains("land"), o = land ? "landscape" : "portrait";
+      const c = await html2canvas(p, {scale: 2.5, backgroundColor:"#ffffff", useCORS:true, logging:false});
+      if (!pdf) pdf = new jsPDF({orientation:o, unit:"mm", format:"a4"}); else pdf.addPage("a4", o);
+      pdf.addImage(c.toDataURL("image/jpeg", .95), "JPEG", 0, 0, land?297:210, land?210:297);
+    }
+    pdf.save(`${safeName(cur().nama)}.pdf`); toast("PDF dimuat turun");
+  }catch(err){ console.error(err); toast("Gagal menjana PDF. Cuba Cetak → Simpan sebagai PDF."); }
+  btn.disabled = false; btn.textContent = "Muat turun PDF";
+};
+
+let tt; function toast(m){ const t=$("toast"); t.textContent=m; t.classList.add("on"); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove("on"),2200); }
+window.addEventListener("resize", fitPreview);
+fillForm();
+})();
+</script>
+</body>
+</html>
